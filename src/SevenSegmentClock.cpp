@@ -172,39 +172,104 @@ void SevenSegmentClock::displaySeperator(char seperatorCharacter) {
       strip->setPixelColor(clockSeperatorLed2, currentColor);
       break;
     default:
+      Serial.print("SevenSegmentClock::displaySeperator: Unknown character to be displayed: ");
+      Serial.println(seperatorCharacter);
+    case ' ':
+    case 0:
       strip->setPixelColor(decimalPointLed, black);
       strip->setPixelColor(clockSeperatorLed1, black);
       strip->setPixelColor(clockSeperatorLed2, black);
-      Serial.print("SevenSegmentClock::displaySeperator: Unknown character to be displayed: ");
-      Serial.println(seperatorCharacter);
       break;
   }
 }
 
-static uint32_t lastUpdate_ms = 0;
 
 void SevenSegmentClock::displayTime(int hour, int minute)  {
+  clockHour = hour;
+  clockMinute = minute;
+  Serial.print("SevenSegmentClock: new time ");
+  Serial.print(clockHour); Serial.print(":"); Serial.println(clockMinute);
+  displayUpdate();
+};
+
+void SevenSegmentClock::displayUpdate(void) {
   char displayText[4];
-  
-  if (clockHour != hour || clockMinute != minute || millis()-lastUpdate_ms > TIME_BETWEEN_DISPLAY_UPDATES_ms) {
-    clockHour = hour;
-    clockMinute = minute;
-    Serial.print("SevenSegmentClock: new time "); Serial.print(clockHour); Serial.print(":"); Serial.println(clockMinute);
+  static int lastHour=0, lastMinute=0;
+  static uint32_t lastUpdate_ms = 0;
+  static uint32_t nextBlinkSwitch_ms = 0;
+  static boolean currentlyBlinkOn = false;
+
+  if (clockHour != lastHour || clockMinute != lastMinute || millis()-lastUpdate_ms > TIME_BETWEEN_DISPLAY_UPDATES_ms) {
+    lastHour = clockHour;
+    lastMinute = clockMinute;
     displayText[0] = (hour > 9) ? '0' + (hour/10) : ' ';
     displayText[1] = '0' + hour % 10;
     displayText[2] = '0' + minute / 10;
     displayText[3] = '0' + minute % 10;
-    displayDigit(0, displayText[0]);
-    displayDigit(1, displayText[1]);
-    displayDigit(2, displayText[2]);
-    displayDigit(3, displayText[3]);
-    displaySeperator(':');
+    switch (blinkMode) {
+      case NoBlinking:
+        displayDigit(0, displayText[0]);
+        displayDigit(1, displayText[1]);
+        displayDigit(2, displayText[2]);
+        displayDigit(3, displayText[3]);
+        displaySeperator(':');
+        break;
+      case ClockBlinking:
+        if (currentlyBlinkOn) {
+          displayDigit(0, displayText[0]);
+          displayDigit(1, displayText[1]);
+          displayDigit(2, displayText[2]);
+          displayDigit(3, displayText[3]);
+          displaySeperator(':');
+        } else {
+          displayDigit(0, ' ');
+          displayDigit(1, ' ');
+          displayDigit(2, ' ');
+          displayDigit(3, ' ');
+          displaySeperator(' ');
+        }
+        if (millis() > nextBlinkSwitch_ms) {
+          currentlyBlinkOn = !currentlyBlinkOn;
+          nextBlinkSwitch_ms = millis() + (currentlyBlinkOn ? BLINK_ON_TIME_ms : BLINK_OFF_TIME_ms);
+        }
+        break;
+      case SeperatorBlinking:
+        displayDigit(0, displayText[0]);
+        displayDigit(1, displayText[1]);
+        displayDigit(2, displayText[2]);
+        displayDigit(3, displayText[3]);
+        if (currentlyBlinkOn) {
+          displaySeperator(':');
+        } else {
+          displaySeperator(' ');
+        }
+        if (millis() > nextBlinkSwitch_ms) {
+          currentlyBlinkOn = !currentlyBlinkOn;
+          nextBlinkSwitch_ms = millis() + (currentlyBlinkOn ? BLINK_ON_TIME_ms : BLINK_OFF_TIME_ms);
+        }
+        break;
+      case DecimalPointBlinking:
+        displayDigit(0, displayText[0]);
+        displayDigit(1, displayText[1]);
+        displayDigit(2, displayText[2]);
+        displayDigit(3, displayText[3]);
+        if (currentlyBlinkOn) {
+          displaySeperator('.');
+        } else {
+          displaySeperator(' ');
+        }
+        if (millis() > nextBlinkSwitch_ms) {
+          currentlyBlinkOn = !currentlyBlinkOn;
+          nextBlinkSwitch_ms = millis() + (currentlyBlinkOn ? BLINK_ON_TIME_ms : BLINK_OFF_TIME_ms);
+        }
+        break;
+    }
     strip->show();
     Serial.print("Shown: "); Serial.print(displayText[0]); Serial.print(displayText[1]);
     Serial.print(':'); Serial.print(displayText[2]); Serial.println(displayText[3]);
     lastUpdate_ms = millis();
   }
-};
+}
 
 uint32_t SevenSegmentClock::red, SevenSegmentClock::green, SevenSegmentClock::blue, SevenSegmentClock::white, SevenSegmentClock::black;
 uint8_t SevenSegmentClock::LedDataPin;

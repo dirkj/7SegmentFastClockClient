@@ -5,7 +5,8 @@
 
 // avoid flickering of the display:
 #define TIME_BETWEEN_DISPLAY_UPDATES_ms 300
-#define BLINK_ON_OFF_TIME_ms 1000
+#define BLINK_OFF_TIME_ms 600
+#define BLINK_ON_TIME_ms 400
 #define defaultLedDataPin 2
 class SevenSegmentClock {
 public:
@@ -13,7 +14,10 @@ public:
   SevenSegmentClock(uint8_t dataPin) { LedDataPin=dataPin; init(); };
   void begin(void);
   void displayTime(int hour, int minute);
+  void displayUpdate(void);
   //void setClockSpeed(int _msPerModelSecond) { msPerModelSecond = _msPerModelSecond; setClockSpeed("x"); };
+  enum BlinkMode { NoBlinking, ClockBlinking, SeperatorBlinking, DecimalPointBlinking };
+  void setBlinkMode(BlinkMode _blinkMode) { blinkMode = _blinkMode; };
   void setClockHalted(bool halted) { clockHalted = halted; };
   static uint32_t red, green, blue, white, black;
   enum ClockDisplayStatus { Off, Booting, Halted, StandardClock, FastClock };
@@ -23,6 +27,7 @@ private:
   void init(void) { displayStatus = Off; clockHour=12; clockMinute=34; setClockHalted(true); };
   static uint8_t LedDataPin;
   static Adafruit_NeoPixel *strip;
+  static BlinkMode blinkMode;
   ClockDisplayStatus displayStatus;
   int clockHour;
   int clockMinute;
