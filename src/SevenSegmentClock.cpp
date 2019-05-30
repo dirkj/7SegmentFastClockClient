@@ -181,22 +181,29 @@ void SevenSegmentClock::displaySeperator(char seperatorCharacter) {
   }
 }
 
+static uint32_t lastUpdate_ms = 0;
+
 void SevenSegmentClock::displayTime(int hour, int minute)  {
   char displayText[4];
-  clockHour = hour;
-  clockMinute = minute;
-  Serial.print("SevenSegmentClock: new time "); Serial.print(clockHour); Serial.print(":"); Serial.println(clockMinute);
-  displayText[0] = (hour > 9) ? '0' + (hour/10) : ' ';
-  displayText[1] = '0' + hour % 10;
-  displayText[2] = '0' + minute / 10;
-  displayText[3] = '0' + minute % 10;
-  displayDigit(0, displayText[0]);
-  displayDigit(1, displayText[1]);
-  displayDigit(2, displayText[2]);
-  displayDigit(3, displayText[3]);
-  displaySeperator(':');
-  strip->show();
-  Serial.print("Shown: "); Serial.print(displayText[0]); Serial.print(displayText[1]); Serial.print(':'); Serial.print(displayText[2]); Serial.println(displayText[3]);
+  
+  if (clockHour != hour || clockMinute != minute || millis()-lastUpdate_ms > TIME_BETWEEN_DISPLAY_UPDATES_ms) {
+    clockHour = hour;
+    clockMinute = minute;
+    Serial.print("SevenSegmentClock: new time "); Serial.print(clockHour); Serial.print(":"); Serial.println(clockMinute);
+    displayText[0] = (hour > 9) ? '0' + (hour/10) : ' ';
+    displayText[1] = '0' + hour % 10;
+    displayText[2] = '0' + minute / 10;
+    displayText[3] = '0' + minute % 10;
+    displayDigit(0, displayText[0]);
+    displayDigit(1, displayText[1]);
+    displayDigit(2, displayText[2]);
+    displayDigit(3, displayText[3]);
+    displaySeperator(':');
+    strip->show();
+    Serial.print("Shown: "); Serial.print(displayText[0]); Serial.print(displayText[1]);
+    Serial.print(':'); Serial.print(displayText[2]); Serial.println(displayText[3]);
+    lastUpdate_ms = millis();
+  }
 };
 
 uint32_t SevenSegmentClock::red, SevenSegmentClock::green, SevenSegmentClock::blue, SevenSegmentClock::white, SevenSegmentClock::black;
