@@ -40,9 +40,9 @@ void saveConfigCallback () {
 void setupWifiConnection() {
   WiFiManager wifiManager;
 
-  //set config save notify callback
   wifiManager.setSaveConfigCallback(saveConfigCallback);
-
+  wifiManager.setConfigPortalTimeout(300);
+  
   //set static ip
   IPAddress _ip,_gw,_sn;
   _ip.fromString(static_ip);
