@@ -42,7 +42,7 @@ void setupWifiConnection() {
 
   wifiManager.setSaveConfigCallback(saveConfigCallback);
   wifiManager.setConfigPortalTimeout(300);
-  
+
   //set static ip
   IPAddress _ip,_gw,_sn;
   _ip.fromString(static_ip);
@@ -191,7 +191,7 @@ void loop() {
     if (minutes % 5 == 0) hours++;
     if (hours > 99) hours = 0;
     sevenSegmentClock.displayTime(hours, minutes);
-    if (hours % 4 == 0) sevenSegmentClock.setBlinkMode(SeperatorBlinking); else sevenSegmentClock.setBlinkMode(NoBlinking);
+    if (hours % 4 == 0) sevenSegmentClock.setBlinkMode(SevenSegmentClock::SeperatorBlinking); else sevenSegmentClock.setBlinkMode(SevenSegmentClock::NoBlinking);
   }
   sevenSegmentClock.displayUpdate();
 }

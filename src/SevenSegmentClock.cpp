@@ -2,7 +2,7 @@
 
 static const uint16_t PixelCount = 4*7*3+3;
 
-#define colorSaturation 63
+#define colorSaturation 31
 
 // Seven Segment Layout: 3 LEDs per segment
 // order of segments:
@@ -34,11 +34,11 @@ static const uint8_t digitOffset[] = { 0, LedsPerDigit, 2*LedsPerDigit+Seperator
 #define Seg_f 0x20
 #define Seg_g 0x40
 
-#define decimalPointLed (2*LedsPerDigit)
-#define clockSeperatorLed1 (2*LedsPerDigit+1)
-#define clockSeperatorLed2 (2*LedsPerDigit+2)
+#define clockSeperatorLed1 (2*LedsPerDigit)
+#define clockSeperatorLed2 (2*LedsPerDigit+1)
+#define decimalPointLed (2*LedsPerDigit+2)
 
-#define firstCharacterMapped 32u /* first char to be mapped is "space" */
+#define firstCharacterMapped 0x20 /* first char to be mapped is "space" */
 #define lastCharacterMapped (sizeof(charMapping) + firstCharacterMapped)
 
 static const unsigned char PROGMEM charMapping[] = {
@@ -54,6 +54,7 @@ static const unsigned char PROGMEM charMapping[] = {
   /* ) */ Seg_b + Seg_c + Seg_f + Seg_g,
   /* * */ 0,
   /* + */ 0,
+  /* , */ 0,
   /* - */ Seg_d,
   /* . */ 0,
   /* / */ Seg_e,
@@ -63,7 +64,7 @@ static const unsigned char PROGMEM charMapping[] = {
   /* 3 */ Seg_b + Seg_c + Seg_d + Seg_f + Seg_g,
   /* 4 */ Seg_a + Seg_c + Seg_d + Seg_g,
   /* 5 */ Seg_a + Seg_b + Seg_d + Seg_f + Seg_g,
-  /* 6 */ Seg_a + Seg_d + Seg_e  + Seg_f + Seg_g,
+  /* 6 */ Seg_a + Seg_b + Seg_d + Seg_e  + Seg_f + Seg_g,
   /* 7 */ Seg_b + Seg_c + Seg_g,
   /* 8 */ Seg_a + Seg_b + Seg_c + Seg_d + Seg_e + Seg_f + Seg_g,
   /* 9 */ Seg_a + Seg_b + Seg_c + Seg_d + Seg_g,
@@ -171,6 +172,11 @@ void SevenSegmentClock::displaySeperator(char seperatorCharacter) {
       strip->setPixelColor(clockSeperatorLed1, currentColor);
       strip->setPixelColor(clockSeperatorLed2, currentColor);
       break;
+      case '|':
+        strip->setPixelColor(decimalPointLed, currentColor);
+        strip->setPixelColor(clockSeperatorLed1, currentColor);
+        strip->setPixelColor(clockSeperatorLed2, currentColor);
+        break;
     default:
       Serial.print("SevenSegmentClock::displaySeperator: Unknown character to be displayed: ");
       Serial.println(seperatorCharacter);
@@ -192,6 +198,8 @@ void SevenSegmentClock::displayTime(int hour, int minute)  {
   displayUpdate();
 };
 
+SevenSegmentClock::BlinkMode SevenSegmentClock::blinkMode;
+
 void SevenSegmentClock::displayUpdate(void) {
   char displayText[4];
   static int lastHour=0, lastMinute=0;
@@ -202,10 +210,10 @@ void SevenSegmentClock::displayUpdate(void) {
   if (clockHour != lastHour || clockMinute != lastMinute || millis()-lastUpdate_ms > TIME_BETWEEN_DISPLAY_UPDATES_ms) {
     lastHour = clockHour;
     lastMinute = clockMinute;
-    displayText[0] = (hour > 9) ? '0' + (hour/10) : ' ';
-    displayText[1] = '0' + hour % 10;
-    displayText[2] = '0' + minute / 10;
-    displayText[3] = '0' + minute % 10;
+    displayText[0] = (clockHour > 9) ? '0' + (clockHour/10) : ' ';
+    displayText[1] = '0' + clockHour % 10;
+    displayText[2] = '0' + clockMinute / 10;
+    displayText[3] = '0' + clockMinute % 10;
     switch (blinkMode) {
       case NoBlinking:
         displayDigit(0, displayText[0]);
@@ -239,7 +247,7 @@ void SevenSegmentClock::displayUpdate(void) {
         displayDigit(2, displayText[2]);
         displayDigit(3, displayText[3]);
         if (currentlyBlinkOn) {
-          displaySeperator(':');
+          displaySeperator('|');
         } else {
           displaySeperator(' ');
         }
@@ -281,20 +289,12 @@ void SevenSegmentClock::begin(void) {
   Serial.print("Pixels="); Serial.println(PixelCount);
   SevenSegmentClock::strip = new Adafruit_NeoPixel(PixelCount, LedDataPin, NEO_GRB + NEO_KHZ800);
   strip->begin();
+  strip->clear();
+  strip->show();
   SevenSegmentClock::red = strip->Color(colorSaturation, 0, 0);
   SevenSegmentClock::green = strip->Color(0, colorSaturation, 0);
   SevenSegmentClock::blue = strip->Color(0, 0, colorSaturation);
   SevenSegmentClock::white = strip->Color(colorSaturation, colorSaturation, colorSaturation);
   SevenSegmentClock::black = strip->Color(0, 0, 0);
-  SevenSegmentClock::currentColor = SevenSegmentClock::white;
-  // strip->show();
-  // boot animation
-  uint32_t colors[] = { red, green, blue, white };
-  unsigned int colorIndex = 0;
-  for (int i=0; i<PixelCount; ++i) {
-    strip->setPixelColor(i, colors[colorIndex++]);
-    if (colorIndex > sizeof(colors)) colorIndex = 0;
-  }
-  strip->show();
-  delay(2000);
+  SevenSegmentClock::currentColor = SevenSegmentClock::blue;
 }

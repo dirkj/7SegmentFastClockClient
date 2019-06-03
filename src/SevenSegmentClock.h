@@ -4,9 +4,9 @@
 #include <Adafruit_NeoPixel.h>
 
 // avoid flickering of the display:
-#define TIME_BETWEEN_DISPLAY_UPDATES_ms 300
-#define BLINK_OFF_TIME_ms 600
-#define BLINK_ON_TIME_ms 400
+#define TIME_BETWEEN_DISPLAY_UPDATES_ms 100
+#define BLINK_OFF_TIME_ms 200
+#define BLINK_ON_TIME_ms 200
 #define defaultLedDataPin 2
 class SevenSegmentClock {
 public:
