@@ -181,11 +181,17 @@ void setup() {
 }
 
 int hours = 0, minutes = 0;
+uint32_t nextUpdate_ms = 0;
 
 void loop() {
-  sevenSegmentClock.displayTime(hours, minutes++);
-  if (minutes > 99) { minutes = 0; }
-  if (minutes % 5 == 0) hours++;
-  if (hours > 99) hours = 0;
-  delay(1000);
+  if (millis() > nextUpdate_ms) {
+    nextUpdate_ms = millis() + 1000;
+    minutes++;
+    if (minutes > 99) { minutes = 0; }
+    if (minutes % 5 == 0) hours++;
+    if (hours > 99) hours = 0;
+    sevenSegmentClock.displayTime(hours, minutes);
+    if (hours % 4 == 0) sevenSegmentClock.setBlinkMode(SeperatorBlinking); else sevenSegmentClock.setBlinkMode(NoBlinking);
+  }
+  sevenSegmentClock.displayUpdate();
 }
