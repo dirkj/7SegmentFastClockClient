@@ -193,10 +193,12 @@ void SevenSegmentClock::displaySeperator(char seperatorCharacter) {
 
 
 void SevenSegmentClock::displayTime(int hour, int minute)  {
-  clockHour = hour;
-  clockMinute = minute;
-  Serial.print("SevenSegmentClock: new time ");
-  Serial.print(clockHour); Serial.print(":"); Serial.println(clockMinute);
+  if (clockHour != hour || clockMinute != minute) {
+    clockHour = hour;
+    clockMinute = minute;
+    Serial.print("SevenSegmentClock: new time ");
+    Serial.print(clockHour); Serial.print(":"); Serial.println(clockMinute);
+  }
   displayUpdate();
 };
 

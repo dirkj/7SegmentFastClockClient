@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <FS.h>                   //this needs to be first, or it all crashes and burns...
-#include <ESP8266WiFi.h>          //https://github.com/esp8266/Arduino
+#include <ESP8266WiFi.h>
+#include <NTPClient.h>        //https://github.com/esp8266/Arduino
+#include <WiFiUdp.h>
 
 //needed for library
 #include <DNSServer.h>
@@ -10,6 +12,19 @@
 #include <ArduinoJson.h>
 #include <SPI.h>
 #include "SevenSegmentClock.h"
+
+// NTP
+WiFiUDP ntpUDP;
+// You can specify the time server pool and the offset (in seconds, can be
+// changed later with setTimeOffset() ). Additionaly you can specify the
+// update interval (in milliseconds, can be changed using setUpdateInterval() ).
+NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 3600, 60000);
+
+#define MODE_DEMO 1
+#define MODE_REALCLOCK 2
+#define MODE_FASTCLOCK 3
+static int appMode = MODE_DEMO;
+
 
 
 static const char *appName = "FastclockClient7Seg";
@@ -174,7 +189,12 @@ const char _SCRIPT[] PROGMEM          = "<script>function c(l){document.getEleme
 const char _HEAD_END[] PROGMEM        = "</head><body><div style='text-align:left;display:inline-block;min-width:260px;'>";
 const char _PORTAL_OPTIONS[] PROGMEM  = "<form action=\"/wifi\" method=\"get\"><button>Configure WiFi</button></form><br/><form action=\"/0wifi\" method=\"get\"><button>Configure WiFi (No Scan)</button></form><br/><form action=\"/i\" method=\"get\"><button>Info</button></form><br/><form action=\"/r\" method=\"post\"><button>Reset</button></form>";
 const char _ITEM[] PROGMEM            = "<div><a href='#p' onclick='c(this)'>{v}</a>&nbsp;<span class='q {i}'>{r}%</span></div>";
-const char _FORM_START[] PROGMEM      = "<form method='get' action='configsave'><label for='n'>Fastclock name</label><input id='n' name='n' length=32 placeholder='clock name'><br/>";
+const char _FORM_START[] PROGMEM      = "<form method='get' action='configsave'>";
+const char _FORM_CLOCKNAME[] PROGMEM  = "<label for='n'>Fastclock name</label><input id='n' name='n' length=32 placeholder='clock name'><br/>";
+const char _FORM_CLOCKMODE_HEADLINE[] PROGMEM = "<br/>Clock mode:<br/>";
+const char _FORM_CLOCKMODE_DEMO[] PROGMEM = "<input class='r' id='md' name='m' type='radio' value='demo' {check}><label for='md'>Demo</label><br/>";
+const char _FORM_CLOCKMODE_REAL[] PROGMEM = "<input class='r' id='mr' name='m' type='radio' value='real' {check}><label for='md'>Real Clock</label><br/>";
+const char _FORM_CLOCKMODE_FAST[] PROGMEM = "<input class='r' id='mf' name='m' type='radio' value='fast' {check}><label for='md'>Fast Clock</label><br/>";
 const char _FORM_PARAM[] PROGMEM      = "<br/><input id='{i}' name='{n}' maxlength={l} placeholder='{p}' value='{v}' {c}>";
 const char _FORM_COLOR_HEADLINE[] PROGMEM = "<br/>Display color:<br/>";
 const char _FORM_COLOR_BLUE[] PROGMEM = "<input class='r' id='cb' name='c' type='radio' value='blue' {check}><label for='cb'>Blue</label><br/>";
@@ -203,6 +223,17 @@ void appConfig() {
   page += String(F("<h3>Clock Options</h3>"));
   //page += FPSTR(_PORTAL_OPTIONS);
   page += FPSTR(_FORM_START);
+  page += FPSTR(_FORM_CLOCKMODE_HEADLINE);
+  input = FPSTR(_FORM_CLOCKMODE_DEMO);
+  input.replace("{check}", (appMode == MODE_DEMO) ? "checked" : "");
+  page += input;
+  input = FPSTR(_FORM_CLOCKMODE_REAL);
+  input.replace("{check}", (appMode == MODE_REALCLOCK) ? "checked" : "");
+  page += input;
+  input = FPSTR(_FORM_CLOCKMODE_FAST);
+  input.replace("{check}", (appMode == MODE_FASTCLOCK) ? "checked" : "");
+  page += input;
+  page += FPSTR(_FORM_CLOCKNAME);
   page += FPSTR(_FORM_COLOR_HEADLINE);
   input = FPSTR(_FORM_COLOR_BLUE);
   input.replace("{check}", (clockColor == SevenSegmentClock::Blue) ? "checked" : "");
@@ -244,6 +275,16 @@ void appConfigSave() {
     String colorName = server->arg("c");
     SevenSegmentClock::Color colorHandle = getColorHandleByName(server->arg("c"));
     sevenSegmentClock.setColor(colorHandle);
+  }
+  if (server->hasArg("m")) {
+    Serial.print("setting clock mode to "); Serial.println(server->arg("m"));
+    if (server->arg("m").equals("real")) appMode = MODE_REALCLOCK;
+    else if (server->arg("m").equals("fast")) appMode = MODE_FASTCLOCK;
+    else if (server->arg("m").equals("demo")) appMode = MODE_DEMO;
+    else {
+      Serial.println("ERROR: Unknown application mode, going into demo mode");
+      appMode = MODE_DEMO;
+    }
   }
   page.replace("{v}", "7Seg Config");
   page += FPSTR(_SCRIPT);
@@ -352,6 +393,8 @@ void setup() {
   pinMode(POWER_OFF_PIN, INPUT);
   */
   setupWifiConnection();
+  Serial.println("Starting NTP Client");
+  timeClient.begin();
 
   Serial.println("Have following configuration:");
   Serial.print("   Clock name: "); Serial.println(clockName);
@@ -372,15 +415,29 @@ int hours = 0, minutes = 0;
 uint32_t nextUpdate_ms = 0;
 
 void loop() {
-  if (millis() > nextUpdate_ms) {
-    nextUpdate_ms = millis() + 1000;
-    minutes++;
-    if (minutes > 99) { minutes = 0; }
-    if (minutes % 5 == 0) hours++;
-    if (hours > 99) hours = 0;
-    sevenSegmentClock.displayTime(hours, minutes);
-    if (hours % 4 == 0) sevenSegmentClock.setBlinkMode(SevenSegmentClock::SeperatorBlinking); else sevenSegmentClock.setBlinkMode(SevenSegmentClock::NoBlinking);
+  timeClient.update();
+
+  //Serial.println(timeClient.getFormattedTime());
+
+  switch (appMode) {
+    case MODE_DEMO:
+      if (millis() > nextUpdate_ms) {
+        nextUpdate_ms = millis() + 1000;
+        minutes++;
+        if (minutes > 99) { minutes = 0; }
+        if (minutes % 5 == 0) hours++;
+        if (hours > 99) hours = 0;
+        sevenSegmentClock.displayTime(hours, minutes);
+        if (hours % 4 == 0) sevenSegmentClock.setBlinkMode(SevenSegmentClock::SeperatorBlinking); else sevenSegmentClock.setBlinkMode(SevenSegmentClock::NoBlinking);
+      }
+      break;
+    case MODE_REALCLOCK:
+      sevenSegmentClock.displayTime(timeClient.getHours(), timeClient.getMinutes());
+      break;
+    case MODE_FASTCLOCK:
+      break;
   }
+
   sevenSegmentClock.displayUpdate();
   server->handleClient();
 }
