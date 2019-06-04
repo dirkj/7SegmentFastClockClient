@@ -23,7 +23,7 @@ NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 3600, 60000);
 #define MODE_DEMO 1
 #define MODE_REALCLOCK 2
 #define MODE_FASTCLOCK 3
-static int appMode = MODE_REAL;
+static int appMode = MODE_REALCLOCK;
 
 
 
