@@ -283,7 +283,7 @@ void SevenSegmentClock::displayUpdate(void) {
   }
 }
 
-uint32_t SevenSegmentClock::red, SevenSegmentClock::green, SevenSegmentClock::blue, SevenSegmentClock::white, SevenSegmentClock::black;
+uint32_t SevenSegmentClock::red, SevenSegmentClock::green, SevenSegmentClock::blue, SevenSegmentClock::white, SevenSegmentClock::black, SevenSegmentClock::yellow;
 uint8_t SevenSegmentClock::LedDataPin;
 Adafruit_NeoPixel *SevenSegmentClock::strip;
 
@@ -293,6 +293,7 @@ void SevenSegmentClock::initColors(uint8_t _brightness) {
   SevenSegmentClock::blue = strip->Color(0, 0, _brightness);
   SevenSegmentClock::white = strip->Color(_brightness, _brightness, _brightness);
   SevenSegmentClock::black = strip->Color(0, 0, 0);
+  SevenSegmentClock::yellow = strip->Color(_brightness, _brightness, 0);
   SevenSegmentClock::setColor(SevenSegmentClock::getColor()); // reset color to enforce reclaculation
 }
 
@@ -304,6 +305,7 @@ void SevenSegmentClock::setColor(Color color) {
     case Red: currentColor = SevenSegmentClock::red; break;
     case Green: currentColor = SevenSegmentClock::green; break;
     case White: currentColor = SevenSegmentClock::white; break;
+    case Yellow: currentColor = SevenSegmentClock::yellow; break;
   }
 }
 

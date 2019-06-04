@@ -53,7 +53,8 @@ static struct ColorSelection {
   { 2, SevenSegmentClock::Blue, "blue" },
   { 3, SevenSegmentClock::Red, "red" },
   { 4, SevenSegmentClock::Green, "green" },
-  { 5, SevenSegmentClock::White, "white" }
+  { 5, SevenSegmentClock::White, "white" },
+  { 6, SevenSegmentClock::Yellow, "yellow" }
 };
 
 static const String getColorName(uint8_t color) {
@@ -201,6 +202,7 @@ const char _FORM_COLOR_BLUE[] PROGMEM = "<input class='r' id='cb' name='c' type=
 const char _FORM_COLOR_RED[] PROGMEM  = "<input class='r' id='cr' name='c' type='radio' value='red' {check}><label for='cr'>Red</label><br/>";
 const char _FORM_COLOR_GREEN[] PROGMEM = "<input class='r' id='cg' name='c' type='radio' value='green' {check}><label for='cg'>Green</label><br/>";
 const char _FORM_COLOR_WHITE[] PROGMEM = "<input class='r' id='cw' name='c' type='radio' value='white' {check}><label for='cw'>White</label><br/>";
+const char _FORM_COLOR_YELLOW[] PROGMEM = "<input class='r' id='cy' name='c' type='radio' value='yellow' {check}><label for='cy'>Yellow</label><br/>";
 const char _FORM_BRIGHTNESS[] PROGMEM = "<br/><label for='b'>Brightness:</label><input id='b' name='b' type='range' min='10' max='255' value='{bright}'><br/>";
 const char _FORM_END[] PROGMEM        = "<br/><button type='submit'>save</button></form>";
 const char _SCAN_LINK[] PROGMEM       = "<br/><div class=\"c\"><a href=\"/wifi\">Scan</a></div>";
@@ -243,6 +245,9 @@ void appConfig() {
   page += input;
   input = FPSTR(_FORM_COLOR_GREEN);
   input.replace("{check}", (clockColor == SevenSegmentClock::Green) ? "checked" : "");
+  page += input;
+  input = FPSTR(_FORM_COLOR_YELLOW);
+  input.replace("{check}", (clockColor == SevenSegmentClock::Yellow) ? "checked" : "");
   page += input;
   input = FPSTR(_FORM_COLOR_WHITE);
   input.replace("{check}", (clockColor == SevenSegmentClock::White) ? "checked" : "");

@@ -19,10 +19,9 @@ public:
   enum BlinkMode { NoBlinking, ClockBlinking, SeperatorBlinking, DecimalPointBlinking };
   void setBlinkMode(BlinkMode _blinkMode) { blinkMode = _blinkMode; };
   void setClockHalted(bool halted) { clockHalted = halted; };
-  enum Color { Black, Red, Green, Blue, White };
+  enum Color { Black, Red, Green, Blue, White, Yellow };
   void setColor(Color color);
   Color getColor(void) { return currentColorHandle; };
-  static uint32_t red, green, blue, white, black;
   enum ClockDisplayStatus { Off, Booting, Halted, StandardClock, FastClock };
   void displayDigit(unsigned int digitNum, char c);
   void displaySeperator(char seperatorCharacter);
@@ -34,6 +33,7 @@ private:
   static Adafruit_NeoPixel *strip;
   static BlinkMode blinkMode;
   static uint8_t brightness;
+  static uint32_t red, green, blue, white, black, yellow;
   ClockDisplayStatus displayStatus;
   int clockHour;
   int clockMinute;
