@@ -112,6 +112,8 @@ static const unsigned char PROGMEM charMapping[] = {
   /* || */ Seg_a + Seg_c + Seg_e + Seg_g
 };
 
+uint8_t SevenSegmentClock::brightness;
+
 void SevenSegmentClock::displaySegment(unsigned int ledAddress, uint32_t color) {
   //Serial.print("displaySegment led="); Serial.print(ledAddress); Serial.print(" color=0x"); Serial.println(color, HEX);
   for (int i=0; i<LedsPerSegment; i++) {
@@ -273,8 +275,8 @@ void SevenSegmentClock::displayUpdate(void) {
         break;
     }
     strip->show();
-    Serial.print("Shown: "); Serial.print(displayText[0]); Serial.print(displayText[1]);
-    Serial.print(':'); Serial.print(displayText[2]); Serial.println(displayText[3]);
+    //Serial.print("Shown: "); Serial.print(displayText[0]); Serial.print(displayText[1]);
+    //Serial.print(':'); Serial.print(displayText[2]); Serial.println(displayText[3]);
     lastUpdate_ms = millis();
   }
 }
@@ -282,6 +284,26 @@ void SevenSegmentClock::displayUpdate(void) {
 uint32_t SevenSegmentClock::red, SevenSegmentClock::green, SevenSegmentClock::blue, SevenSegmentClock::white, SevenSegmentClock::black;
 uint8_t SevenSegmentClock::LedDataPin;
 Adafruit_NeoPixel *SevenSegmentClock::strip;
+
+void SevenSegmentClock::initColors(uint8_t _brightness) {
+  SevenSegmentClock::red = strip->Color(_brightness, 0, 0);
+  SevenSegmentClock::green = strip->Color(0, _brightness, 0);
+  SevenSegmentClock::blue = strip->Color(0, 0, _brightness);
+  SevenSegmentClock::white = strip->Color(_brightness, _brightness, _brightness);
+  SevenSegmentClock::black = strip->Color(0, 0, 0);
+  SevenSegmentClock::setColor(SevenSegmentClock::getColor()); // reset color to enforce reclaculation
+}
+
+void SevenSegmentClock::setColor(Color color) {
+  currentColorHandle = color;
+  switch (currentColorHandle) {
+    case Black: currentColor = SevenSegmentClock::black; break;
+    case Blue: currentColor = SevenSegmentClock::blue; break;
+    case Red: currentColor = SevenSegmentClock::red; break;
+    case Green: currentColor = SevenSegmentClock::green; break;
+    case White: currentColor = SevenSegmentClock::white; break;
+  }
+}
 
 void SevenSegmentClock::begin(void) {
   Serial.println("Init Neopixels ...");
@@ -291,10 +313,7 @@ void SevenSegmentClock::begin(void) {
   strip->begin();
   strip->clear();
   strip->show();
-  SevenSegmentClock::red = strip->Color(colorSaturation, 0, 0);
-  SevenSegmentClock::green = strip->Color(0, colorSaturation, 0);
-  SevenSegmentClock::blue = strip->Color(0, 0, colorSaturation);
-  SevenSegmentClock::white = strip->Color(colorSaturation, colorSaturation, colorSaturation);
-  SevenSegmentClock::black = strip->Color(0, 0, 0);
+  initColors(colorSaturation);
   SevenSegmentClock::currentColor = SevenSegmentClock::blue;
+  SevenSegmentClock::currentColorHandle = SevenSegmentClock::Blue;
 }
