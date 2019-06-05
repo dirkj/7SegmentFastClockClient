@@ -18,7 +18,7 @@ WiFiUDP ntpUDP;
 // You can specify the time server pool and the offset (in seconds, can be
 // changed later with setTimeOffset() ). Additionaly you can specify the
 // update interval (in milliseconds, can be changed using setUpdateInterval() ).
-NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 3600, 60000);
+NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 7200, 60000);
 
 #define MODE_DEMO 1
 #define MODE_REALCLOCK 2
@@ -35,7 +35,7 @@ static const char *appName = "FastclockClient7Seg";
 #define DEFAULT_CLOCK_NAME "fastclk"
 #define DEFAULT_CLOCK_CHANNEL_STRING "1"
 #define DEFAULT_CLOCK_CHANNEL 1
-#define DEFAULT_CLOCK_COLOR "blue"
+#define DEFAULT_CLOCK_COLOR "green"
 
 SevenSegmentClock sevenSegmentClock;
 ESP8266WebServer *server;
@@ -81,7 +81,7 @@ static const SevenSegmentClock::Color getColorHandle(uint8_t id) {
       return colorSelection[i].colorHandle;
     }
   }
-  return SevenSegmentClock::Blue; // default
+  return SevenSegmentClock::Green; // default
 }
 
 static const SevenSegmentClock::Color getColorHandleByName(String name) {
@@ -90,10 +90,10 @@ static const SevenSegmentClock::Color getColorHandleByName(String name) {
       return colorSelection[i].colorHandle;
     }
   }
-  return SevenSegmentClock::Blue; // default
+  return SevenSegmentClock::Green; // default
 }
 
-#define DEFAULT_COLOR SevenSegmentClock::Blue
+#define DEFAULT_COLOR SevenSegmentClock::Green
 #define DEFAULT_BRIGHTNESS 31
 
 char clockName[MAX_CLOCK_NAME_LEN+1] = DEFAULT_CLOCK_NAME;
@@ -101,7 +101,7 @@ char clockChannelString[MAX_CLOCK_CHANNEL_STRING_LEN+1] = DEFAULT_CLOCK_CHANNEL_
 uint8_t clockChannel = DEFAULT_CLOCK_CHANNEL;
 SevenSegmentClock::Color clockColor = DEFAULT_COLOR;
 //uint8_t brightness = DEFAULT_BRIGHTNESS;
-
+int utcTimeOffsetMinutes = 120; // default UTC+2h
 
 //flag for saving data
 bool shouldSaveConfig = false;
@@ -196,6 +196,7 @@ const char _FORM_CLOCKMODE_HEADLINE[] PROGMEM = "<br/>Clock mode:<br/>";
 const char _FORM_CLOCKMODE_DEMO[] PROGMEM = "<input class='r' id='md' name='m' type='radio' value='demo' {check}><label for='md'>Demo</label><br/>";
 const char _FORM_CLOCKMODE_REAL[] PROGMEM = "<input class='r' id='mr' name='m' type='radio' value='real' {check}><label for='md'>Real Clock</label><br/>";
 const char _FORM_CLOCKMODE_FAST[] PROGMEM = "<input class='r' id='mf' name='m' type='radio' value='fast' {check}><label for='md'>Fast Clock</label><br/>";
+const char _FORM_UTC_OFFSET[] PROGMEM = "<label for='utc'>UTC offset (minutes)</label><input id='utc' name='utc' length=4 placeholder='120'><br/>";
 const char _FORM_PARAM[] PROGMEM      = "<br/><input id='{i}' name='{n}' maxlength={l} placeholder='{p}' value='{v}' {c}>";
 const char _FORM_COLOR_HEADLINE[] PROGMEM = "<br/>Display color:<br/>";
 const char _FORM_COLOR_BLUE[] PROGMEM = "<input class='r' id='cb' name='c' type='radio' value='blue' {check}><label for='cb'>Blue</label><br/>";
@@ -235,6 +236,7 @@ void appConfig() {
   input = FPSTR(_FORM_CLOCKMODE_FAST);
   input.replace("{check}", (appMode == MODE_FASTCLOCK) ? "checked" : "");
   page += input;
+  page += FPSTR(_FORM_UTC_OFFSET);
   page += FPSTR(_FORM_CLOCKNAME);
   page += FPSTR(_FORM_COLOR_HEADLINE);
   input = FPSTR(_FORM_COLOR_BLUE);
@@ -267,6 +269,14 @@ void appConfig() {
 void appConfigSave() {
   String page = FPSTR(_HEAD);
 
+  page.replace("{v}", "7Seg Config");
+  page += FPSTR(_SCRIPT);
+  page += FPSTR(_STYLE);
+  page += FPSTR(_HEAD_END);
+  page += String(F("<h1>"));
+  page += appName;
+  page += String(F("</h1>"));
+
   Serial.print("appConfigSave "); Serial.print(server->args()); Serial.println(" arguments");
   for (int i=0; i<server->args(); ++i) {
     Serial.print(server->argName(i));
@@ -275,30 +285,44 @@ void appConfigSave() {
   }
   if (server->hasArg("b")) {
     sevenSegmentClock.setBrightness(server->arg("b").toInt());
+    page += F("<div>Set brightness to ");
+    page += server->arg("b");
+    page += F(".</div>");
   }
   if (server->hasArg("c")) {
     String colorName = server->arg("c");
     SevenSegmentClock::Color colorHandle = getColorHandleByName(server->arg("c"));
     sevenSegmentClock.setColor(colorHandle);
+    page += F("<div>Set color to ");
+    page += server->arg("c");
+    page += F(".</div>");
   }
   if (server->hasArg("m")) {
     Serial.print("setting clock mode to "); Serial.println(server->arg("m"));
+    page += F("<div>Set clock mode to ");
+    page += server->arg("m");
+    page += F(".</div>");
     if (server->arg("m").equals("real")) appMode = MODE_REALCLOCK;
     else if (server->arg("m").equals("fast")) appMode = MODE_FASTCLOCK;
     else if (server->arg("m").equals("demo")) appMode = MODE_DEMO;
     else {
       Serial.println("ERROR: Unknown application mode, going into demo mode");
       appMode = MODE_DEMO;
+      page += F("<div>ERROR: Unknown clockmode, using default: demo.</div>");
     }
   }
-  page.replace("{v}", "7Seg Config");
-  page += FPSTR(_SCRIPT);
-  page += FPSTR(_STYLE);
-  //page += _customHeadElement;
-  page += FPSTR(_HEAD_END);
-  page += String(F("<h1>"));
-  page += appName;
-  page += String(F("</h1>"));
+  if (server->hasArg("utc")) {
+    page += F("<div>Set real clock offset to ");
+    if (server->arg("utc").equals("")) {
+      page += "120";
+      utcTimeOffsetMinutes = 120;
+    } else {
+      page += server->arg("utc");
+      utcTimeOffsetMinutes = server->arg("utc").toInt();
+    }
+    timeClient.setTimeOffset(utcTimeOffsetMinutes);
+    page += F(" minutes.</div>");
+  }
   page += String(F("<div>Configuration updated.</div>"));
   page += FPSTR(_END);
   server->sendHeader("Content-Length", String(page.length()));
@@ -377,7 +401,7 @@ void setup() {
           strncpy(clockName, DEFAULT_CLOCK_NAME, MAX_CLOCK_NAME_LEN);
           strncpy(clockChannelString, DEFAULT_CLOCK_CHANNEL_STRING, MAX_CLOCK_CHANNEL_STRING_LEN);
           //strncpy(clockColor, DEFAULT_CLOCK_COLOR, MAX_CLOCK_COLOR_LEN);
-          clockColor = SevenSegmentClock::Blue;
+          clockColor = getColorHandleByName(DEFAULT_CLOCK_COLOR);
         }
       }
     } else {

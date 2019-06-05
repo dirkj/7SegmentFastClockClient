@@ -28,7 +28,7 @@ public:
   void setBrightness(uint8_t b) { brightness=b; initColors(b); };
   uint8_t getBrightness(void) { return brightness; };
 private:
-  void init(void) { displayStatus = Off; clockHour=12; clockMinute=34; setClockHalted(true); currentColorHandle = Blue; currentColor = blue; };
+  void init(void) { displayStatus = Off; clockHour=12; clockMinute=34; setClockHalted(true); currentColorHandle = Green; currentColor = green; };
   static uint8_t LedDataPin;
   static Adafruit_NeoPixel *strip;
   static BlinkMode blinkMode;
