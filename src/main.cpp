@@ -134,25 +134,6 @@ void setupWifiConnection() {
   //save the custom parameters to FS
   if (shouldSaveConfig) {
     debug.outln("saving config ... NYI", DEBUG_MED_INFO);
-    // DynamicJsonDocument config(2048);
-    //JsonObject json = jsonBuffer.createObject();
-    /*
-    config["clock_name"] = clockName;
-    config["clock_channel"] = clockChannelString;
-    config["clock_color"] = clockColor;
-    */
-
-/*
-    File configFile = SPIFFS.open("/config.json", "w");
-    if (!configFile) {
-      Serial.println("failed to open config file for writing");
-    }
-
-    serializeJsonPretty(config, Serial);
-    serializeJson(config, configFile);
-    configFile.close();
-    //end save
-*/
   }
 
   debug.out("local ip: ", DEBUG_MAX_INFO); debug.outln(WiFi.localIP(), DEBUG_MAX_INFO);
@@ -333,77 +314,15 @@ void setup() {
   if (SPIFFS.begin()) {
     debug.outln(F("mounted file system"), DEBUG_MAX_INFO);
     config.begin("main.cfg", mainConfig, sizeof(mainConfig)/sizeof(mainConfig[0]));
-  #if 0
-    if (SPIFFS.exists("/config.json")) {
-      //file exists, reading and loading
-      Serial.println("reading config file");
-      File configFile = SPIFFS.open("/config.json", "r");
-      if (configFile) {
-        Serial.println("opened config file");
-        size_t size = configFile.size();
-        // Allocate a buffer to store contents of the file.
-        std::unique_ptr<char[]> buf(new char[size]);
-
-        configFile.readBytes(buf.get(), size);
-        DynamicJsonDocument config(2048);
-        //JsonObject json = jsonBuffer.createObject();
-        DeserializationError error = deserializeJson(config, configFile);
-        serializeJson(config, Serial);
-        if (!error) {
-          Serial.println("\nparsed json");
-
-          //**strcpy(mqtt_server, json["mqtt_server"]);
-          //**strcpy(mqtt_port, json["mqtt_port"]);
-          //strcpy(blynk_token, json["blynk_token"]);
-
-          if (config["clock_name"]) {
-            strncpy(clockName, config["clock_name"], MAX_CLOCK_NAME_LEN);
-          } else {
-            Serial.println("no clock name in config");
-          }
-          if (config["clock_channel"]) {
-            strncpy(clockChannelString, config["clock_channel"], MAX_CLOCK_CHANNEL_STRING_LEN);
-          } else {
-            Serial.println("no clock channel in config");
-          }
-          if (config["clock_color"]) {
-            //strncpy(clockColor, config["clock_color"], MAX_CLOCK_COLOR_LEN);
-            clockColor = getColorHandle(config["clock_color"]);
-          } else {
-            Serial.println("no clock color in config");
-          }
-        } else {
-          Serial.println("failed to load json config, using defaults");
-          strncpy(clockName, DEFAULT_CLOCK_NAME, MAX_CLOCK_NAME_LEN);
-          strncpy(clockChannelString, DEFAULT_CLOCK_CHANNEL_STRING, MAX_CLOCK_CHANNEL_STRING_LEN);
-          //strncpy(clockColor, DEFAULT_CLOCK_COLOR, MAX_CLOCK_COLOR_LEN);
-          clockColor = getColorHandleByName(DEFAULT_CLOCK_COLOR);
-        }
-      }
-    } else {
-      Serial.println("no config file found");
-    }
-#endif
   } else {
     debug.outln(F("failed to mount FS"), DEBUG_ERROR);
     config.begin("main.cfg", mainConfig, sizeof(mainConfig)/sizeof(mainConfig[0]));
   }
-  //end read
-  // setupWifiConnection();
-
-  /*
-  radio.setClockChannel(clockChannel);
-  radio.setClockName(clockName);
-  radio.begin();
-  fastclock.begin();
-  pinMode(POWER_OFF_PIN, INPUT);
-  */
   setupWifiConnection();
   debug.outln(F("Starting NTP Client"), DEBUG_MAX_INFO);
   timeClient.begin();
 
   debug.outln(F("Have following configuration:"), DEBUG_MAX_INFO);
-  //Serial.print("   Clock name: "); Serial.println(config.getString("clock_name"));
   debug.out(F("   App Mode: "), DEBUG_MAX_INFO); debug.outln(config.getString("appMode"), DEBUG_MAX_INFO);
   debug.out(F("   Clock color: "), DEBUG_MAX_INFO); debug.outln(config.getString("clockColor"), DEBUG_MAX_INFO);
   debug.out(F("   Brightness: "), DEBUG_MAX_INFO); debug.outln(config.getString("brightness"), DEBUG_MAX_INFO);
@@ -431,8 +350,6 @@ uint32_t nextUpdate_ms = 0;
 void loop() {
   timeClient.update();
   fastclock.loop();
-
-  //Serial.println(timeClient.getFormattedTime());
 
   if (config.getString("appMode").equals(MODE_DEMO)) {
     if (millis() > nextUpdate_ms) {
