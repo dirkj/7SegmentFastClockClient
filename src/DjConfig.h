@@ -25,7 +25,7 @@ public:
   void setString(String parameter, String value);
   void setInt(String parameter, int value);
   void setBoolean(String parameter, boolean value);
-
+  void writeAllConfigs(void) ;
 private:
   String _filename = "";
   Debug& debug;

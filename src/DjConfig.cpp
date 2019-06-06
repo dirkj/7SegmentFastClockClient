@@ -127,6 +127,28 @@ void Config::loadFile(const char *filename, const char * const sectionConfigItem
   }
 }
 
+void Config::writeAllConfigs(void) {
+  boolean allChangesWritten = false;
+  logHeap();
+
+  while (!allChangesWritten) {
+    for (int i=0; i<numberOfConfigItems; ++i) {
+      debug.out(configItems[i].section);
+      debug.out(".");
+      debug.out(configItems[i].name);
+      debug.out("(");
+      debug.out(configItems[i].changed ? "changed" : "-");
+      debug.out(")=");
+      debug.outln(configItems[i].value);
+      if (configItems[i].changed) {
+        writeConfigFile(configItems[i].section);
+        break; // leave for-loop and restart search for changes
+      }
+    }
+    // no further changes found, we are done
+    allChangesWritten = true;
+  }
+}
 
 void Config::writeConfigFile(String filename) {
   logHeap();

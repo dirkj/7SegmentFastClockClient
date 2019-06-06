@@ -94,7 +94,7 @@ const char _SCRIPT[] PROGMEM            = "<script>function c(l){document.getEle
 const char _HEAD_END[] PROGMEM          = "</head><body><div style='text-align:left;display:inline-block;min-width:260px;'>";
 const char _PORTAL_OPTIONS[] PROGMEM    = "<form action=\"/wifi\" method=\"get\"><button>Configure WiFi</button></form><br/><form action=\"/0wifi\" method=\"get\"><button>Configure WiFi (No Scan)</button></form><br/><form action=\"/i\" method=\"get\"><button>Info</button></form><br/><form action=\"/r\" method=\"post\"><button>Reset</button></form>";
 const char _ITEM[] PROGMEM              = "<div><a href='#p' onclick='c(this)'>{v}</a>&nbsp;<span class='q {i}'>{r}%</span></div>";
-const char _FORM_START[] PROGMEM        = "<form method='get' action='configsave'>";
+const char _FORM_START[] PROGMEM        = "<form method='get' action='configSave'>";
 const char _FORM_CLOCKNAME[] PROGMEM    = "<label for='n'>Fastclock name</label><input id='n' name='n' length=32 placeholder='clock name' value='{n}'><br/>";
 const char _FORM_CLOCKSFOUND_START[] PROGMEM = "Fastclocks seen:<br/><ul>";
 const char _FORM_CLOCKSFOUND_ITEM[] PROGMEM = "<li>{fc}</li>";
@@ -115,7 +115,7 @@ const char _FORM_COLOR_YELLOW[] PROGMEM = "<input class='r' id='cy' name='c' typ
 const char _FORM_BRIGHTNESS[] PROGMEM   = "<label for='b'>Brightness:</label><input id='b' name='b' type='range' min='10' max='255' value='{bright}'><br/>";
 const char _FORM_FASTCLOCK_INFO[] PROGMEM = "<div>Number of fastclocks found: {nfc}</div><br/>";
 const char _FORM_END[] PROGMEM          = "<br/><button type='submit'>apply</button></form><br/>";
-const char _SAVE_PERM_BUTTON[] PROGMEM  = "<br/><form action=\"/saveToFile\" method=\"get\"><button>Save permanently</button></form><br/>";
+const char _SAVE_PERM_BUTTON[] PROGMEM  = "<br/><form action=\"/configSavePermanent\" method=\"get\"><button>Save permanently</button></form><br/>";
 const char _CONFIG_BUTTON[] PROGMEM     = "<br/><form action=\"/config\" method=\"get\"><button>Configure</button></form><br/>";
 const char _VSPACE[] PROGMEM            = "<br/><br/>";
 const char _SAVED[] PROGMEM             = "<div>Credentials Saved<br />Trying to connect ESP to network.<br />If it fails reconnect to AP to try again</div>";
@@ -269,6 +269,26 @@ void appConfigSave() {
   server->send(200, "text/html", page);
 }
 
+void appConfigSavePermanent() {
+  String page = FPSTR(_HEAD);
+
+  page.replace("{v}", "7Seg Config");
+  page += FPSTR(_SCRIPT);
+  page += FPSTR(_STYLE);
+  page += FPSTR(_HEAD_END);
+  page += String(F("<h1>"));
+  page += appName;
+  page += String(F("</h1>"));
+
+  debug.outln("Writing configs to save them permanently", DEBUG_MAX_INFO);
+  config.writeAllConfigs();
+  page += String(F("<div>Configuration permanently saved.</div>"));
+  page += FPSTR(_CONFIG_BUTTON);
+  page += FPSTR(_END);
+  server->sendHeader("Content-Length", String(page.length()));
+  server->send(200, "text/html", page);
+}
+
 void setup() {
   debug.out(F("Starting *** "), DEBUG_MAX_INFO); debug.outln(appName, DEBUG_MAX_INFO);
   debug.out(F("Reset reason: "), DEBUG_MIN_INFO);
@@ -305,11 +325,15 @@ void setup() {
 
   debug.outln(F("Starting 7-segment clock display ..."), DEBUG_MAX_INFO);
   sevenSegmentClock.begin();
+  sevenSegmentClock.setBrightness(config.getInt("brightness"));
+  sevenSegmentClock.setColor(sevenSegmentClock.getColorHandleByName(config.getString("clockColor")));
 
   // setting up web server for clock configuration
   server = new ESP8266WebServer(80);
   server->on("/config", HTTP_GET, appConfig);
-  server->on("/configsave", HTTP_GET, appConfigSave);
+  server->on("/configSave", HTTP_GET, appConfigSave);
+  server->on("/configSavePermanent", HTTP_GET, appConfigSavePermanent);
+
   server->begin();
 }
 
