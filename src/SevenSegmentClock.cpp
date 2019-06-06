@@ -4,6 +4,18 @@ static const uint16_t PixelCount = 4*7*3+3;
 
 #define colorSaturation 31
 
+SevenSegmentClock::ColorSelection
+SevenSegmentClock::colorSelection[] = {
+  { Black, "Black", 0, 0, 0 },
+  { Blue, "Blue", 0, 0, 255 },
+  { Red, "Red", 255, 0, 0 },
+  { Green, "Green", 0, 255, 0 },
+  { White, "White", 255, 255, 255 },
+  { Yellow, "Yellow", 255, 255, 0 }
+};
+
+int SevenSegmentClock::numberOfSupportedColors = sizeof(SevenSegmentClock::colorSelection) / sizeof(SevenSegmentClock::colorSelection[0]);
+
 // Seven Segment Layout: 3 LEDs per segment
 // order of segments:
 //     b
@@ -288,6 +300,7 @@ uint8_t SevenSegmentClock::LedDataPin;
 Adafruit_NeoPixel *SevenSegmentClock::strip;
 
 void SevenSegmentClock::initColors(uint8_t _brightness) {
+  #if 0
   SevenSegmentClock::red = strip->Color(_brightness, 0, 0);
   SevenSegmentClock::green = strip->Color(0, _brightness, 0);
   SevenSegmentClock::blue = strip->Color(0, 0, _brightness);
@@ -295,10 +308,13 @@ void SevenSegmentClock::initColors(uint8_t _brightness) {
   SevenSegmentClock::black = strip->Color(0, 0, 0);
   SevenSegmentClock::yellow = strip->Color(_brightness, _brightness, 0);
   SevenSegmentClock::setColor(SevenSegmentClock::getColor()); // reset color to enforce reclaculation
+  #endif
 }
 
 void SevenSegmentClock::setColor(Color color) {
   currentColorHandle = color;
+  currentColor = getColorByHandle(color);
+  #if 0
   switch (currentColorHandle) {
     case Black: currentColor = SevenSegmentClock::black; break;
     case Blue: currentColor = SevenSegmentClock::blue; break;
@@ -307,6 +323,7 @@ void SevenSegmentClock::setColor(Color color) {
     case White: currentColor = SevenSegmentClock::white; break;
     case Yellow: currentColor = SevenSegmentClock::yellow; break;
   }
+  #endif
 }
 
 void SevenSegmentClock::begin(void) {

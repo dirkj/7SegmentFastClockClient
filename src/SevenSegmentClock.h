@@ -29,6 +29,49 @@ public:
   void displaySeperator(char seperatorCharacter);
   void setBrightness(uint8_t b) { brightness=b; initColors(b); };
   uint8_t getBrightness(void) { return brightness; };
+  int getNumberSupportedColors(void) { return numberOfSupportedColors; };
+  String getColorName(int index) { return String(colorSelection[index].colorName); };
+  String getColorName(Color handle) {
+    for (int i=0; i<numberOfSupportedColors; ++i) {
+      if (colorSelection[i].handle == handle)
+        return colorSelection[i].colorName;
+    }
+    debug.outln(F("ERROR: Unknown color / handle not known"), DEBUG_ERROR);
+    return String(F("ERROR: Unknown color handle"));
+  };
+  Color getColorHandle(int index) { return colorSelection[index].handle; };
+  uint32_t getAdjustedStripColor(uint8_t red, uint8_t green, uint8_t blue) {
+    return strip->Color((red * brightness) / 255, (green * brightness) / 255, (blue * brightness) / 255);
+  }
+  uint32 getColorByName(String name) {
+    for (int i=0; i<numberOfSupportedColors; ++i) {
+      if (colorSelection[i].colorName.equals(name)) {
+        return getAdjustedStripColor(colorSelection[i].red, colorSelection[i].green, colorSelection[i].blue);
+      }
+    }
+    debug.out(F("ERROR: Unknown color name "), DEBUG_ERROR);
+    debug.outln(name, DEBUG_ERROR);
+    return 0xffffffff;
+  };
+  uint32 getColorByHandle(Color handle) {
+    for (int i=0; i<numberOfSupportedColors; ++i) {
+      if (colorSelection[i].handle == handle) {
+        return getAdjustedStripColor(colorSelection[i].red, colorSelection[i].green, colorSelection[i].blue);
+      }
+    }
+    debug.outln(F("ERROR: Unknown color handle"), DEBUG_ERROR);
+    return 0xffffffff;
+  };
+  Color getColorHandleByName(String name) {
+    for (int i=0; i<numberOfSupportedColors; ++i) {
+      if (colorSelection[i].colorName.equals(name)) {
+        return colorSelection[i].handle;
+      }
+    }
+    debug.out(F("ERROR: Unknown color name "), DEBUG_ERROR);
+    debug.outln(name, DEBUG_ERROR);
+    return Green; // default
+  };
 private:
   Debug& debug;
   Config& config;
@@ -46,5 +89,11 @@ private:
   uint32_t currentColor;
   void displaySegment(unsigned int ledAddress, uint32_t color);
   void initColors(uint8_t _brightness);
+  static struct ColorSelection {
+    Color handle;
+    String colorName;
+    uint8_t red, green, blue;
+  } colorSelection[];
+  static int numberOfSupportedColors;
 };
 #endif

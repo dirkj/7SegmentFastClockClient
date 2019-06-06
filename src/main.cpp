@@ -41,61 +41,8 @@ Debug debug;
 Config config(debug);
 ClockClient fastclock(debug, config);
 SevenSegmentClock sevenSegmentClock(debug, config);
-ESP8266WebServer *server;
 ClockClient fastclockClient(debug, config);
-
-static struct ColorSelection {
-  uint8_t id;
-  SevenSegmentClock::Color colorHandle;
-  String colorName;
-} colorSelection[] = {
-  { 1, SevenSegmentClock::Black, "black" },
-  { 2, SevenSegmentClock::Blue, "blue" },
-  { 3, SevenSegmentClock::Red, "red" },
-  { 4, SevenSegmentClock::Green, "green" },
-  { 5, SevenSegmentClock::White, "white" },
-  { 6, SevenSegmentClock::Yellow, "yellow" }
-};
-
-#if 0
-
-static const String getColorName(uint8_t color) {
-  for (unsigned int i=0; i<sizeof(colorSelection); ++i) {
-    if (color == colorSelection[i].id) {
-      return colorSelection[i].colorName;
-    }
-  }
-  return "**INVALID**";
-}
-
-static const uint8_t getColorId(SevenSegmentClock::Color color) {
-  for (unsigned int i=0; i<sizeof(colorSelection); ++i) {
-    if (color == colorSelection[i].colorHandle) {
-      return colorSelection[i].id;
-    }
-  }
-  return -1;
-}
-
-static const SevenSegmentClock::Color getColorHandle(uint8_t id) {
-  for (unsigned int i=0; i<sizeof(colorSelection); ++i) {
-    if (id == colorSelection[i].id) {
-      return colorSelection[i].colorHandle;
-    }
-  }
-  return SevenSegmentClock::Green; // default
-}
-#endif
-
-static const SevenSegmentClock::Color getColorHandleByName(String name) {
-  for (unsigned int i=0; i<sizeof(colorSelection); ++i) {
-    if (name.equals(colorSelection[i].colorName)) {
-      return colorSelection[i].colorHandle;
-    }
-  }
-  return SevenSegmentClock::Green; // default
-}
-
+ESP8266WebServer *server;
 
 //flag for saving data
 bool shouldSaveConfig = false;
@@ -156,15 +103,18 @@ const char _FORM_CLOCKMODE_FAST[] PROGMEM = "<input class='r' id='mf' name='m' t
 const char _FORM_UTC_OFFSET[] PROGMEM   = "<label for='utc'>UTC offset (minutes)</label><input id='utc' name='utc' length=4 placeholder='120'><br/>";
 const char _FORM_PARAM[] PROGMEM        = "<br/><input id='{i}' name='{n}' maxlength={l} placeholder='{p}' value='{v}' {c}>";
 const char _FORM_COLOR_HEADLINE[] PROGMEM = "<br/>Display color:<br/>";
-const char _FORM_COLOR_BLUE[] PROGMEM   = "<input class='r' id='cb' name='c' type='radio' value='blue' {check}><label for='cb'>Blue</label><br/>";
-const char _FORM_COLOR_RED[] PROGMEM    = "<input class='r' id='cr' name='c' type='radio' value='red' {check}><label for='cr'>Red</label><br/>";
-const char _FORM_COLOR_GREEN[] PROGMEM  = "<input class='r' id='cg' name='c' type='radio' value='green' {check}><label for='cg'>Green</label><br/>";
-const char _FORM_COLOR_WHITE[] PROGMEM  = "<input class='r' id='cw' name='c' type='radio' value='white' {check}><label for='cw'>White</label><br/>";
-const char _FORM_COLOR_YELLOW[] PROGMEM = "<input class='r' id='cy' name='c' type='radio' value='yellow' {check}><label for='cy'>Yellow</label><br/>";
-const char _FORM_BRIGHTNESS[] PROGMEM   = "<br/><label for='b'>Brightness:</label><input id='b' name='b' type='range' min='10' max='255' value='{bright}'><br/>";
-const char _FORM_FASTCLOCK_INFO[] PROGMEM = "<br/><br/><div>Number of fastclocks found: {nfc}</div>";
-const char _FORM_END[] PROGMEM          = "<br/><button type='submit'>save</button></form>";
-const char _CONFIG_LINK[] PROGMEM       = "<br/><div class=\"c\"><a href=\"/config\">Configure</a></div>";
+const char _FORM_COLOR_template[] PROGMEM = "<input class='r' id='{cid}' name='c' type='radio' value='{cname}' {check}><label for='{cid}'>{cname}</label><br/>";
+const char _FORM_COLOR_BLUE[] PROGMEM   = "<input class='r' id='cb' name='c' type='radio' value='Blue' {check}><label for='cb'>Blue</label><br/>";
+const char _FORM_COLOR_RED[] PROGMEM    = "<input class='r' id='cr' name='c' type='radio' value='Red' {check}><label for='cr'>Red</label><br/>";
+const char _FORM_COLOR_GREEN[] PROGMEM  = "<input class='r' id='cg' name='c' type='radio' value='Green' {check}><label for='cg'>Green</label><br/>";
+const char _FORM_COLOR_WHITE[] PROGMEM  = "<input class='r' id='cw' name='c' type='radio' value='White' {check}><label for='cw'>White</label><br/>";
+const char _FORM_COLOR_YELLOW[] PROGMEM = "<input class='r' id='cy' name='c' type='radio' value='Yellow' {check}><label for='cy'>Yellow</label><br/>";
+const char _FORM_BRIGHTNESS[] PROGMEM   = "<label for='b'>Brightness:</label><input id='b' name='b' type='range' min='10' max='255' value='{bright}'><br/>";
+const char _FORM_FASTCLOCK_INFO[] PROGMEM = "<div>Number of fastclocks found: {nfc}</div><br/>";
+const char _FORM_END[] PROGMEM          = "<br/><button type='submit'>apply</button></form><br/>";
+const char _SAVE_PERM_BUTTON[] PROGMEM  = "<br/><form action=\"/saveToFile\" method=\"get\"><button>Save permanently</button></form><br/>";
+const char _CONFIG_BUTTON[] PROGMEM     = "<br/><form action=\"/config\" method=\"get\"><button>Configure</button></form><br/>";
+const char _VSPACE[] PROGMEM            = "<br/><br/>";
 const char _SAVED[] PROGMEM             = "<div>Credentials Saved<br />Trying to connect ESP to network.<br />If it fails reconnect to AP to try again</div>";
 const char _END[] PROGMEM               = "</div></body></html>";
 
@@ -172,6 +122,7 @@ void appConfig() {
   String page = FPSTR(_HEAD);
   String input;
   String value;
+  int ivalue;
 
   page.replace("{v}", "7Seg Config");
   page += FPSTR(_SCRIPT);
@@ -194,32 +145,31 @@ void appConfig() {
   input = FPSTR(_FORM_CLOCKMODE_FAST);
   input.replace("{check}", (config.getString("appMode").equals("Fastclock")) ? "checked" : "");
   page += input;
+  page += FPSTR(_VSPACE);
   page += FPSTR(_FORM_UTC_OFFSET);
+  page += FPSTR(_VSPACE);
   page += FPSTR(_FORM_CLOCKNAME);
+  page += FPSTR(_VSPACE);
   page += FPSTR(_FORM_COLOR_HEADLINE);
-  input = FPSTR(_FORM_COLOR_BLUE);
-  input.replace("{check}", (config.getString("clockColor").equals("Blue")) ? "checked" : "");
-  page += input;
-  input = FPSTR(_FORM_COLOR_RED);
-  input.replace("{check}", (config.getString("clockColor").equals("Red")) ? "checked" : "");
-  page += input;
-  input = FPSTR(_FORM_COLOR_GREEN);
-  input.replace("{check}", (config.getString("clockColor").equals("Green")) ? "checked" : "");
-  page += input;
-  input = FPSTR(_FORM_COLOR_YELLOW);
-  input.replace("{check}", (config.getString("clockColor").equals("Yellow")) ? "checked" : "");
-  page += input;
-  input = FPSTR(_FORM_COLOR_WHITE);
-  input.replace("{check}", (config.getString("clockColor").equals("White")) ? "checked" : "");
-  page += input;
+  for (int i=0; i<sevenSegmentClock.getNumberSupportedColors(); ++i) {
+    input = FPSTR(_FORM_COLOR_template);
+    input.replace("{cid}", sevenSegmentClock.getColorName(i));
+    input.replace("{cname}", sevenSegmentClock.getColorName(i));
+    input.replace("{check}", (config.getString("clockColor").equals(sevenSegmentClock.getColorName(i))) ? "checked" : "");
+    page += input;
+  }
+
+  page += FPSTR(_VSPACE);
   input = FPSTR(_FORM_BRIGHTNESS);
   value = String(sevenSegmentClock.getBrightness());
   input.replace("{bright}", value);
   page += input;
 
+  page += FPSTR(_VSPACE);
   input = FPSTR(_FORM_FASTCLOCK_INFO);
-  //value = String(ClockClient::getNumberOfKnownClocks());
-  value = String("unknown");
+  ivalue = fastclock.getNumberOfKnownClocks();
+  value = String(ivalue);
+  //value = String("unknown");
   input.replace("{nfc}", value);
   page += input;
 
@@ -252,15 +202,18 @@ void appConfigSave() {
     debug.outln(server->arg(i), DEBUG_MAX_INFO);
   }
   if (server->hasArg("b")) {
-    sevenSegmentClock.setBrightness(server->arg("b").toInt());
+    int brightness = server->arg("b").toInt();
+    sevenSegmentClock.setBrightness(brightness);
+    config.setInt("brightness", brightness);
     page += F("<div>Set brightness to ");
     page += server->arg("b");
     page += F(".</div>");
   }
   if (server->hasArg("c")) {
     String colorName = server->arg("c");
-    SevenSegmentClock::Color colorHandle = getColorHandleByName(server->arg("c"));
+    SevenSegmentClock::Color colorHandle = sevenSegmentClock.getColorHandleByName(server->arg("c"));
     sevenSegmentClock.setColor(colorHandle);
+    config.setString("clockColor", colorName);
     page += F("<div>Set color to ");
     page += server->arg("c");
     page += F(".</div>");
@@ -294,7 +247,8 @@ void appConfigSave() {
     page += F(" minutes.</div>");
   }
   page += String(F("<div>Configuration updated.</div>"));
-  page += FPSTR(_CONFIG_LINK);
+  page += FPSTR(_CONFIG_BUTTON);
+  page += FPSTR(_SAVE_PERM_BUTTON);
   page += FPSTR(_END);
   server->sendHeader("Content-Length", String(page.length()));
   server->send(200, "text/html", page);
