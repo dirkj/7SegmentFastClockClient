@@ -18,7 +18,7 @@ static const char _FORM_CLOCKMODE_REAL[] PROGMEM = "<input class='r' id='mr' nam
 static const char _FORM_CLOCKMODE_FAST[] PROGMEM = "<input class='r' id='mf' name='m' type='radio' value='fast' {check}><label for='md'>Fast Clock</label><br/>";
 static const char _FORM_UTC_OFFSET[] PROGMEM   = "<label for='utc'>UTC offset (minutes)</label><input id='utc' name='utc' length=4 placeholder='120'><br/>";
 static const char _FORM_PARAM[] PROGMEM        = "<br/><input id='{i}' name='{n}' maxlength={l} placeholder='{p}' value='{v}' {c}>";
-static const char _FORM_COLOR_HEADLINE[] PROGMEM = "<br/>Display color:<br/>";
+static const char _FORM_COLOR_HEADLINE[] PROGMEM = "Display color:<br/>";
 static const char _FORM_COLOR_template[] PROGMEM = "<input class='r' id='{cid}' name='c' type='radio' value='{cname}' {check}><label for='{cid}'>{cname}</label><br/>";
 static const char _FORM_BRIGHTNESS[] PROGMEM   = "<label for='b'>Brightness:</label><input id='b' name='b' type='range' min='10' max='255' value='{bright}'><br/>";
 static const char _FORM_FASTCLOCK_INFO[] PROGMEM = "<div>Number of fastclocks found: {nfc}</div><br/>";
