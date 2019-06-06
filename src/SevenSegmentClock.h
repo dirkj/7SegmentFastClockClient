@@ -2,6 +2,8 @@
 #define sevenSegmentClock_h_included
 
 #include <Adafruit_NeoPixel.h>
+#include "DjDebug.h"
+#include "DjConfig.h"
 
 // avoid flickering of the display:
 #define TIME_BETWEEN_DISPLAY_UPDATES_ms 100
@@ -10,8 +12,8 @@
 #define defaultLedDataPin 2
 class SevenSegmentClock {
 public:
-  SevenSegmentClock() { LedDataPin=defaultLedDataPin; init(); };
-  SevenSegmentClock(uint8_t dataPin) { LedDataPin=dataPin; init(); };
+  SevenSegmentClock(Debug& _debug, Config& _config):debug(_debug), config(_config) { LedDataPin=defaultLedDataPin; init(); };
+  SevenSegmentClock(Debug& _debug, Config& _config, uint8_t dataPin):debug(_debug), config(_config) { LedDataPin=dataPin; init(); };
   void begin(void);
   void displayTime(int hour, int minute);
   void displayUpdate(void);
@@ -28,6 +30,8 @@ public:
   void setBrightness(uint8_t b) { brightness=b; initColors(b); };
   uint8_t getBrightness(void) { return brightness; };
 private:
+  Debug& debug;
+  Config& config;
   void init(void) { displayStatus = Off; clockHour=12; clockMinute=34; setClockHalted(true); currentColorHandle = Green; currentColor = green; };
   static uint8_t LedDataPin;
   static Adafruit_NeoPixel *strip;
