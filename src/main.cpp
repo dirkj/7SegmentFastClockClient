@@ -107,11 +107,6 @@ const char _FORM_UTC_OFFSET[] PROGMEM   = "<label for='utc'>UTC offset (minutes)
 const char _FORM_PARAM[] PROGMEM        = "<br/><input id='{i}' name='{n}' maxlength={l} placeholder='{p}' value='{v}' {c}>";
 const char _FORM_COLOR_HEADLINE[] PROGMEM = "<br/>Display color:<br/>";
 const char _FORM_COLOR_template[] PROGMEM = "<input class='r' id='{cid}' name='c' type='radio' value='{cname}' {check}><label for='{cid}'>{cname}</label><br/>";
-const char _FORM_COLOR_BLUE[] PROGMEM   = "<input class='r' id='cb' name='c' type='radio' value='Blue' {check}><label for='cb'>Blue</label><br/>";
-const char _FORM_COLOR_RED[] PROGMEM    = "<input class='r' id='cr' name='c' type='radio' value='Red' {check}><label for='cr'>Red</label><br/>";
-const char _FORM_COLOR_GREEN[] PROGMEM  = "<input class='r' id='cg' name='c' type='radio' value='Green' {check}><label for='cg'>Green</label><br/>";
-const char _FORM_COLOR_WHITE[] PROGMEM  = "<input class='r' id='cw' name='c' type='radio' value='White' {check}><label for='cw'>White</label><br/>";
-const char _FORM_COLOR_YELLOW[] PROGMEM = "<input class='r' id='cy' name='c' type='radio' value='Yellow' {check}><label for='cy'>Yellow</label><br/>";
 const char _FORM_BRIGHTNESS[] PROGMEM   = "<label for='b'>Brightness:</label><input id='b' name='b' type='range' min='10' max='255' value='{bright}'><br/>";
 const char _FORM_FASTCLOCK_INFO[] PROGMEM = "<div>Number of fastclocks found: {nfc}</div><br/>";
 const char _FORM_END[] PROGMEM          = "<br/><button type='submit'>apply</button></form><br/>";
@@ -215,6 +210,14 @@ void appConfigSave() {
     debug.out(server->argName(i), DEBUG_MAX_INFO);
     debug.out(": ", DEBUG_MAX_INFO);
     debug.outln(server->arg(i), DEBUG_MAX_INFO);
+  }
+  if (server->hasArg("n")) {
+    String clockName = server->arg("n");
+    config.setString("listenToClock", clockName);
+    fastclock.setListenToClock(clockName);
+    page += F("<div>Set fastclock to listen to clock with name ");
+    page += clockName;
+    page += F(".</div>");
   }
   if (server->hasArg("b")) {
     int brightness = server->arg("b").toInt();

@@ -26,6 +26,7 @@ class ClockClient
     void begin();
     void loop();
     static void setListenToClock(const char *_name) { name = String(_name); }
+    static void setListenToClock(String _name) { name = String(_name); }
     static const char * const getLastMessage();
     static String const getText() { return text; }
     static String const getClock() { return clock; }
