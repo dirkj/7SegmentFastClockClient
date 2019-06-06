@@ -95,7 +95,10 @@ const char _HEAD_END[] PROGMEM          = "</head><body><div style='text-align:l
 const char _PORTAL_OPTIONS[] PROGMEM    = "<form action=\"/wifi\" method=\"get\"><button>Configure WiFi</button></form><br/><form action=\"/0wifi\" method=\"get\"><button>Configure WiFi (No Scan)</button></form><br/><form action=\"/i\" method=\"get\"><button>Info</button></form><br/><form action=\"/r\" method=\"post\"><button>Reset</button></form>";
 const char _ITEM[] PROGMEM              = "<div><a href='#p' onclick='c(this)'>{v}</a>&nbsp;<span class='q {i}'>{r}%</span></div>";
 const char _FORM_START[] PROGMEM        = "<form method='get' action='configsave'>";
-const char _FORM_CLOCKNAME[] PROGMEM    = "<label for='n'>Fastclock name</label><input id='n' name='n' length=32 placeholder='clock name'><br/>";
+const char _FORM_CLOCKNAME[] PROGMEM    = "<label for='n'>Fastclock name</label><input id='n' name='n' length=32 placeholder='clock name' value='{n}'><br/>";
+const char _FORM_CLOCKSFOUND_START[] PROGMEM = "Fastclocks seen:<br/><ul>";
+const char _FORM_CLOCKSFOUND_ITEM[] PROGMEM = "<li>{fc}</li>";
+const char _FORM_CLOCKSFOUND_END[] PROGMEM = "</ul><br/>";
 const char _FORM_CLOCKMODE_HEADLINE[] PROGMEM = "<br/>Clock mode:<br/>";
 const char _FORM_CLOCKMODE_DEMO[] PROGMEM = "<input class='r' id='md' name='m' type='radio' value='demo' {check}><label for='md'>Demo</label><br/>";
 const char _FORM_CLOCKMODE_REAL[] PROGMEM = "<input class='r' id='mr' name='m' type='radio' value='real' {check}><label for='md'>Real Clock</label><br/>";
@@ -148,7 +151,19 @@ void appConfig() {
   page += FPSTR(_VSPACE);
   page += FPSTR(_FORM_UTC_OFFSET);
   page += FPSTR(_VSPACE);
-  page += FPSTR(_FORM_CLOCKNAME);
+  input = FPSTR(_FORM_CLOCKNAME);
+  value = config.getString("listenToClock");
+  input.replace("{n}", value);
+  page += input;
+  page += FPSTR(_FORM_CLOCKSFOUND_START);
+  String *knownClocks = fastclock.getKnownClocks();
+  for (int i=0; i<fastclock.getNumberOfKnownClocks(); ++i) {
+    input = FPSTR(_FORM_CLOCKSFOUND_ITEM);
+    input.replace("{fc}", knownClocks[i]);
+    page += input;
+  }
+  page += FPSTR(_FORM_CLOCKSFOUND_END);
+
   page += FPSTR(_VSPACE);
   page += FPSTR(_FORM_COLOR_HEADLINE);
   for (int i=0; i<sevenSegmentClock.getNumberSupportedColors(); ++i) {

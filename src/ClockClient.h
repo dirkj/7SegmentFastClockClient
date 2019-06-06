@@ -37,7 +37,7 @@ class ClockClient
     static int const getClockSeconds() { return clockSeconds; }
     static void addClockChangeCallback(ClockChangeCallback callback);
     int getNumberOfKnownClocks() { return fastclockScanner.getNumberOfKnownClocks(); };
-    static String *getKnownClocks();
+    String *getKnownClocks() { return fastclockScanner.getKnownClocks(); };
     int getListenPort();
     IPAddress getMulticastIP();
     static String const getClockString() {
