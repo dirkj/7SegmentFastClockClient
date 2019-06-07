@@ -5,7 +5,7 @@
 //
 //
 
-#include <DjSimpleFS.h>
+#include "DjSimpleFS.h"
 
 boolean SimpleFS::_initialized = false;
 FSInfo SimpleFS::fsInfo;
@@ -76,4 +76,3 @@ size_t SimpleFS::getMaxPathLength() {
   }
   return fsInfo.maxPathLength;
 }
-

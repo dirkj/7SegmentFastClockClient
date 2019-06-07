@@ -3,12 +3,8 @@
 #include <ESP8266WiFi.h>
 #include <NTPClient.h>        //https://github.com/esp8266/Arduino
 #include <WiFiUdp.h>
-
-//needed for library
 #include <DNSServer.h>
-//#include <ESP8266WebServer.h>
 #include <WiFiManager.h>
-
 #include <ArduinoJson.h>
 #include <SPI.h>
 #include "DjDebug.h"
@@ -17,6 +13,7 @@
 #include "DjDebug.h"
 #include "ClockClient.h"
 #include "WebUI.h"
+#include "DjSimpleFS.h"
 
 // NTP
 WiFiUDP ntpUDP;
@@ -24,7 +21,6 @@ WiFiUDP ntpUDP;
 // changed later with setTimeOffset() ). Additionaly you can specify the
 // update interval (in milliseconds, can be changed using setUpdateInterval() ).
 NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 7200, 60000);
-
 
 static const char *appName = "FastclockClient7Seg";
 const char * const PROGMEM mainConfig[] = {
@@ -42,6 +38,7 @@ SevenSegmentClock sevenSegmentClock(debug, config);
 ClockClient fastclockClient(debug, config);
 //ESP8266WebServer *server;
 WebUI *webUI;
+SimpleFS filesystem(debug);
 
 //flag for saving data
 bool shouldSaveConfig = false;
@@ -94,22 +91,12 @@ void setup() {
   debug.out(F("Reset reason: "), DEBUG_MIN_INFO);
   debug.outln(ESP.getResetReason(), DEBUG_MIN_INFO);
 
-  //clean FS, for testing
-  //SPIFFS.format();
-
-  //read configuration from FS json
-  debug.outln(F("mounting FS..."), DEBUG_MAX_INFO);
-
-  if (SPIFFS.begin()) {
-    debug.outln(F("mounted file system"), DEBUG_MAX_INFO);
-    config.begin("main.cfg", mainConfig, sizeof(mainConfig)/sizeof(mainConfig[0]));
-  } else {
-    debug.outln(F("failed to mount FS"), DEBUG_ERROR);
-    config.begin("main.cfg", mainConfig, sizeof(mainConfig)/sizeof(mainConfig[0]));
-  }
+  filesystem.begin();
+  config.begin("main.cfg", mainConfig, sizeof(mainConfig)/sizeof(mainConfig[0]));
   setupWifiConnection();
   debug.outln(F("Starting NTP Client"), DEBUG_MAX_INFO);
   timeClient.begin();
+  timeClient.setTimeOffset(config.getInt("utcTimeOffsetMinutes") * 60);
 
   debug.outln(F("Have following configuration:"), DEBUG_MAX_INFO);
   debug.out(F("   App Mode: "), DEBUG_MAX_INFO); debug.outln(config.getString("appMode"), DEBUG_MAX_INFO);
@@ -118,7 +105,6 @@ void setup() {
   debug.out(F("   Clock listen port: "), DEBUG_MAX_INFO); debug.outln(config.getString("listenPort"), DEBUG_MAX_INFO);
   debug.out(F("   Real time UTC offset: "), DEBUG_MAX_INFO); debug.outln(config.getString("utcTimeOffsetMinutes"), DEBUG_MAX_INFO);
 
-  timeClient.setTimeOffset(config.getInt("utcTimeOffsetMinutes") * 60);
   debug.outln(F("Starting fastclock ..."), DEBUG_MAX_INFO);
   fastclock.begin();
 
@@ -127,14 +113,14 @@ void setup() {
   sevenSegmentClock.setBrightness(config.getInt("brightness"));
   sevenSegmentClock.setColor(sevenSegmentClock.getColorHandleByName(config.getString("clockColor")));
 
-  // setting up web server for clock configuration
-  //server = new ESP8266WebServer(80);
+  // setting up web server for clock configuration; intentionally very late
+  // as we need the web server during boot to be able to connect to/configure WiFi
   webUI = new WebUI(debug, config, timeClient, fastclock, sevenSegmentClock);
   webUI->begin();
 }
 
-int hours = 0, minutes = 0;
-uint32_t nextUpdate_ms = 0;
+static int hours = 0, minutes = 0;
+static uint32_t nextUpdate_ms = 0;
 
 void loop() {
   timeClient.update();
@@ -166,4 +152,5 @@ void loop() {
 
   sevenSegmentClock.displayUpdate();
   webUI->loop();
+  filesystem.loop();
 }
