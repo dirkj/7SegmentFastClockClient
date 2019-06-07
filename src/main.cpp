@@ -151,10 +151,18 @@ void loop() {
       if (hours % 4 == 0) sevenSegmentClock.setBlinkMode(SevenSegmentClock::SeperatorBlinking); else sevenSegmentClock.setBlinkMode(SevenSegmentClock::NoBlinking);
     }
   } else if (config.getString("appMode").equals(MODE_REALCLOCK)) {
+    sevenSegmentClock.setClockHalted(!fastclock.isActive());
+    sevenSegmentClock.setBlinkMode(SevenSegmentClock::NoBlinking);
     sevenSegmentClock.displayTime(timeClient.getHours(), timeClient.getMinutes());
   } else if (config.getString("appMode").equals(MODE_FASTCLOCK)) {
+    sevenSegmentClock.setClockHalted(!fastclock.isActive());
+    if (fastclock.isActive()) {
+      sevenSegmentClock.setBlinkMode(SevenSegmentClock::NoBlinking);
+    } else {
+      sevenSegmentClock.setBlinkMode(SevenSegmentClock::DecimalPointColoredBlinking);
+    }
     sevenSegmentClock.displayTime(fastclock.getClockHours(), fastclock.getClockMinutes());
-  } else { debug.outln("ERROR: Unknown appMode found.", DEBUG_ERROR); }
+  } else { debug.outln(F("ERROR: Unknown appMode found."), DEBUG_ERROR); }
 
   sevenSegmentClock.displayUpdate();
   webUI->loop();

@@ -11,7 +11,9 @@ SevenSegmentClock::colorSelection[] = {
   { Red, "Red", 255, 0, 0 },
   { Green, "Green", 0, 255, 0 },
   { White, "White", 255, 255, 255 },
-  { Yellow, "Yellow", 255, 255, 0 }
+  { Yellow, "Yellow", 255, 255, 0 },
+  { Magenta, "Magenta", 255, 0, 255 },
+  { Magenta, "Cyan", 0, 255, 255 }
 };
 
 int SevenSegmentClock::numberOfSupportedColors = sizeof(SevenSegmentClock::colorSelection) / sizeof(SevenSegmentClock::colorSelection[0]);
@@ -173,23 +175,27 @@ void SevenSegmentClock::displayDigit(unsigned int digitNum, char charToDisplay) 
 }
 
 void SevenSegmentClock::displaySeperator(char seperatorCharacter) {
+  displaySeperator(seperatorCharacter, currentColor);
+}
+
+void SevenSegmentClock::displaySeperator(char seperatorCharacter, uint32_t color) {
   //Serial.print("displaySeperator: seperator="); Serial.println(seperatorCharacter);
   switch (seperatorCharacter) {
     case '.':
     case ',':
-      strip->setPixelColor(decimalPointLed, currentColor);
+      strip->setPixelColor(decimalPointLed, color);
       strip->setPixelColor(clockSeperatorLed1, black);
       strip->setPixelColor(clockSeperatorLed2, black);
       break;
     case ':':
       strip->setPixelColor(decimalPointLed, black);
-      strip->setPixelColor(clockSeperatorLed1, currentColor);
-      strip->setPixelColor(clockSeperatorLed2, currentColor);
+      strip->setPixelColor(clockSeperatorLed1, color);
+      strip->setPixelColor(clockSeperatorLed2, color);
       break;
       case '|':
-        strip->setPixelColor(decimalPointLed, currentColor);
-        strip->setPixelColor(clockSeperatorLed1, currentColor);
-        strip->setPixelColor(clockSeperatorLed2, currentColor);
+        strip->setPixelColor(decimalPointLed, color);
+        strip->setPixelColor(clockSeperatorLed1, color);
+        strip->setPixelColor(clockSeperatorLed2, color);
         break;
     default:
       Serial.print("SevenSegmentClock::displaySeperator: Unknown character to be displayed: ");
@@ -203,6 +209,14 @@ void SevenSegmentClock::displaySeperator(char seperatorCharacter) {
   }
 }
 
+void SevenSegmentClock::displaySeperator(uint32_t color) {
+  strip->setPixelColor(clockSeperatorLed1, color);
+  strip->setPixelColor(clockSeperatorLed2, color);
+}
+
+void SevenSegmentClock::displayDecimalPoint(uint32_t color) {
+  strip->setPixelColor(decimalPointLed, color);
+}
 
 void SevenSegmentClock::displayTime(int hour, int minute)  {
   if (clockHour != hour || clockMinute != minute) {
@@ -236,7 +250,9 @@ void SevenSegmentClock::displayUpdate(void) {
         displayDigit(1, displayText[1]);
         displayDigit(2, displayText[2]);
         displayDigit(3, displayText[3]);
-        displaySeperator(':');
+        //displaySeperator(':');
+        displaySeperator(currentColor);
+        displayDecimalPoint(black);
         break;
       case ClockBlinking:
         if (currentlyBlinkOn) {
@@ -244,17 +260,15 @@ void SevenSegmentClock::displayUpdate(void) {
           displayDigit(1, displayText[1]);
           displayDigit(2, displayText[2]);
           displayDigit(3, displayText[3]);
-          displaySeperator(':');
+          //displaySeperator(':');
+          displaySeperator(currentColor);
         } else {
           displayDigit(0, ' ');
           displayDigit(1, ' ');
           displayDigit(2, ' ');
           displayDigit(3, ' ');
-          displaySeperator(' ');
-        }
-        if (millis() > nextBlinkSwitch_ms) {
-          currentlyBlinkOn = !currentlyBlinkOn;
-          nextBlinkSwitch_ms = millis() + (currentlyBlinkOn ? BLINK_ON_TIME_ms : BLINK_OFF_TIME_ms);
+          //displaySeperator(' ');
+          displaySeperator(black);
         }
         break;
       case SeperatorBlinking:
@@ -263,13 +277,13 @@ void SevenSegmentClock::displayUpdate(void) {
         displayDigit(2, displayText[2]);
         displayDigit(3, displayText[3]);
         if (currentlyBlinkOn) {
-          displaySeperator('|');
+          //displaySeperator('|');
+          displaySeperator(currentColor);
+          displayDecimalPoint(currentColor);
         } else {
-          displaySeperator(' ');
-        }
-        if (millis() > nextBlinkSwitch_ms) {
-          currentlyBlinkOn = !currentlyBlinkOn;
-          nextBlinkSwitch_ms = millis() + (currentlyBlinkOn ? BLINK_ON_TIME_ms : BLINK_OFF_TIME_ms);
+          //displaySeperator(' ');
+          displaySeperator(black);
+          displayDecimalPoint(black);
         }
         break;
       case DecimalPointBlinking:
@@ -278,15 +292,30 @@ void SevenSegmentClock::displayUpdate(void) {
         displayDigit(2, displayText[2]);
         displayDigit(3, displayText[3]);
         if (currentlyBlinkOn) {
-          displaySeperator('.');
+          //displaySeperator('.');
+          displayDecimalPoint(currentColor);
         } else {
-          displaySeperator(' ');
-        }
-        if (millis() > nextBlinkSwitch_ms) {
-          currentlyBlinkOn = !currentlyBlinkOn;
-          nextBlinkSwitch_ms = millis() + (currentlyBlinkOn ? BLINK_ON_TIME_ms : BLINK_OFF_TIME_ms);
+          //displaySeperator(' ');
+          displayDecimalPoint(black);
         }
         break;
+      case DecimalPointColoredBlinking:
+        displayDigit(0, displayText[0]);
+        displayDigit(1, displayText[1]);
+        displayDigit(2, displayText[2]);
+        displayDigit(3, displayText[3]);
+        if (currentlyBlinkOn) {
+          //displaySeperator('.', currentColor);
+          displayDecimalPoint(currentColor);
+        } else {
+          //displaySeperator('.', blinkColor);
+          displayDecimalPoint(blinkColor);
+        }
+        break;
+    }
+    if (millis() > nextBlinkSwitch_ms) {
+      currentlyBlinkOn = !currentlyBlinkOn;
+      nextBlinkSwitch_ms = millis() + (currentlyBlinkOn ? BLINK_ON_TIME_ms : BLINK_OFF_TIME_ms);
     }
     strip->show();
     //Serial.print("Shown: "); Serial.print(displayText[0]); Serial.print(displayText[1]);
@@ -295,35 +324,68 @@ void SevenSegmentClock::displayUpdate(void) {
   }
 }
 
-uint32_t SevenSegmentClock::red, SevenSegmentClock::green, SevenSegmentClock::blue, SevenSegmentClock::white, SevenSegmentClock::black, SevenSegmentClock::yellow;
 uint8_t SevenSegmentClock::LedDataPin;
 Adafruit_NeoPixel *SevenSegmentClock::strip;
-
-void SevenSegmentClock::initColors(uint8_t _brightness) {
-  #if 0
-  SevenSegmentClock::red = strip->Color(_brightness, 0, 0);
-  SevenSegmentClock::green = strip->Color(0, _brightness, 0);
-  SevenSegmentClock::blue = strip->Color(0, 0, _brightness);
-  SevenSegmentClock::white = strip->Color(_brightness, _brightness, _brightness);
-  SevenSegmentClock::black = strip->Color(0, 0, 0);
-  SevenSegmentClock::yellow = strip->Color(_brightness, _brightness, 0);
-  SevenSegmentClock::setColor(SevenSegmentClock::getColor()); // reset color to enforce reclaculation
-  #endif
-}
 
 void SevenSegmentClock::setColor(Color color) {
   currentColorHandle = color;
   currentColor = getColorByHandle(color);
-  #if 0
-  switch (currentColorHandle) {
-    case Black: currentColor = SevenSegmentClock::black; break;
-    case Blue: currentColor = SevenSegmentClock::blue; break;
-    case Red: currentColor = SevenSegmentClock::red; break;
-    case Green: currentColor = SevenSegmentClock::green; break;
-    case White: currentColor = SevenSegmentClock::white; break;
-    case Yellow: currentColor = SevenSegmentClock::yellow; break;
+}
+
+void SevenSegmentClock::setBlinkColor(Color color) {
+  blinkColorHandle=color;
+  blinkColor=getColorByHandle(color);
+  debug.out(F("setBlinkColor to ")); debug.outln(getColorName(color));
+}
+
+String SevenSegmentClock::getColorName(Color handle) {
+  for (int i=0; i<numberOfSupportedColors; ++i) {
+    if (colorSelection[i].handle == handle)
+      return colorSelection[i].colorName;
   }
-  #endif
+  debug.outln(F("ERROR: Unknown color / handle not known"), DEBUG_ERROR);
+  return String(F("ERROR: Unknown color handle"));
+}
+
+SevenSegmentClock::Color SevenSegmentClock::getColorHandle(int index) {
+  return colorSelection[index].handle;
+}
+
+uint32_t SevenSegmentClock::getAdjustedStripColor(uint8_t red, uint8_t green, uint8_t blue) {
+  return strip->Color((red * brightness) / 255, (green * brightness) / 255, (blue * brightness) / 255);
+}
+
+uint32 SevenSegmentClock::getColorByName(String name) {
+  for (int i=0; i<numberOfSupportedColors; ++i) {
+    if (colorSelection[i].colorName.equals(name)) {
+      return getAdjustedStripColor(colorSelection[i].red, colorSelection[i].green, colorSelection[i].blue);
+    }
+  }
+  debug.out(F("ERROR: Unknown color name "), DEBUG_ERROR);
+  debug.outln(name, DEBUG_ERROR);
+  return 0xffffffff;
+}
+
+uint32 SevenSegmentClock::getColorByHandle(Color handle) {
+  for (int i=0; i<numberOfSupportedColors; ++i) {
+    if (colorSelection[i].handle == handle) {
+      return getAdjustedStripColor(colorSelection[i].red, colorSelection[i].green, colorSelection[i].blue);
+    }
+  }
+  debug.outln(F("ERROR: Unknown color handle"), DEBUG_ERROR);
+  debug.out(F("Currently I know about ")); debug.out(numberOfSupportedColors); debug.outln(F(" colors."));
+  return 0xffffffff;
+}
+
+SevenSegmentClock::Color SevenSegmentClock::getColorHandleByName(String name) {
+  for (int i=0; i<numberOfSupportedColors; ++i) {
+    if (colorSelection[i].colorName.equals(name)) {
+      return colorSelection[i].handle;
+    }
+  }
+  debug.out(F("ERROR: Unknown color name "), DEBUG_ERROR);
+  debug.outln(name, DEBUG_ERROR);
+  return Green; // default
 }
 
 void SevenSegmentClock::begin(void) {
@@ -332,9 +394,11 @@ void SevenSegmentClock::begin(void) {
   Serial.print("Pixels="); Serial.println(PixelCount);
   SevenSegmentClock::strip = new Adafruit_NeoPixel(PixelCount, LedDataPin, NEO_GRB + NEO_KHZ800);
   strip->begin();
+  setClockHalted(true);
+  setBrightness(20);
+  setColor(Green);
+  setBlinkColor(Red);
+  black = strip->Color(0, 0, 0);
   strip->clear();
   strip->show();
-  initColors(colorSaturation);
-  SevenSegmentClock::currentColor = SevenSegmentClock::blue;
-  SevenSegmentClock::currentColorHandle = SevenSegmentClock::Blue;
 }
