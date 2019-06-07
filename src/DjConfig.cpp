@@ -128,26 +128,22 @@ void Config::loadFile(const char *filename, const char * const sectionConfigItem
 }
 
 void Config::writeAllConfigs(void) {
-  boolean allChangesWritten = false;
   logHeap();
-
-  while (!allChangesWritten) {
-    for (int i=0; i<numberOfConfigItems; ++i) {
-      debug.out(configItems[i].section);
-      debug.out(".");
-      debug.out(configItems[i].name);
-      debug.out("(");
-      debug.out(configItems[i].changed ? "changed" : "-");
-      debug.out(")=");
-      debug.outln(configItems[i].value);
-      if (configItems[i].changed) {
-        writeConfigFile(configItems[i].section);
-        break; // leave for-loop and restart search for changes
-      }
+  debug.out(F("Write all changed configs, checking ")); debug.out(numberOfConfigItems); debug.outln(F(" items."));
+  for (int i=0; i<numberOfConfigItems; ++i) {
+    debug.out("["); debug.out(i); debug.out("] ");
+    debug.out(configItems[i].section);
+    debug.out(".");
+    debug.out(configItems[i].name);
+    debug.out("(");
+    debug.out(configItems[i].changed ? "changed" : "-");
+    debug.out(")=");
+    debug.outln(configItems[i].value);
+    if (configItems[i].changed) {
+      writeConfigFile(configItems[i].section);
     }
-    // no further changes found, we are done
-    allChangesWritten = true;
   }
+  logHeap();
 }
 
 void Config::writeConfigFile(String filename) {
@@ -229,8 +225,10 @@ void Config::setString(String key, String value) {
     debug.out(F("ERROR: Tried to set new value, but cannot find config item ")); debug.outln(key);
   } else {
     // debug.outln(configItems[index].value);
-    configItems[index].value = String(value);
-    configItems[index].changed = true;
+    if (!configItems[index].value.equals(value)) {
+      configItems[index].value = String(value);
+      configItems[index].changed = true;
+    }
   }
 }
 
