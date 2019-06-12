@@ -9,6 +9,18 @@ Prerequisites:
 -   WS-2812 based adressable LED chain forming the 7-segment display
 -   number of LEDs per segment is configurable
 
+The order of the WS2812 LEDs is important. The library could be enhanced to get more flexibility here, on the other hand there seems to be not that many useful options. For now, please follow the following order of the LEDs for each digit:
+
+```
+   -3-
+ 4|   |2
+   -1-
+ 5|   |7
+   -6-
+```
+
+To display times like 12:34 or temperatures like 12.3° we have 2 digits, a seperator (2 dots) and a decimal point followed by another 2 digits. Thus all WS2812 LEDs are on a single chain for the complete display.
+
 This is, how it could look like (fyi: the big cargo car is 1:45 scale, the small one is 1:160):
 
 ![Clock Picture](doc/Clock1a.png)
@@ -19,4 +31,4 @@ The configuration menu allows the selection of real or fast clock and some optio
 
 ## Links / References
 
--   example of 3d printable segment frames
+-   example of 3d printable segment frames: http://www.thingiverse.com/thing:2947883
