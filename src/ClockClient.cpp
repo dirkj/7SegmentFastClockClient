@@ -82,65 +82,88 @@ void ClockClient::begin() {
 
 void ClockClient::interpretClockMessage(const char *_msg) {
   String msg = String(_msg);
+
   if (!msg.startsWith("fastclock\r\n")) {
-      debug.out(F("ERROR: This is not a fastclock message! Got message=")); debug.outln(msg.substring(0,30));
+      debug.out(F("ERROR: This is not a fastclock message! Got message="));
+      debug.outln(msg.substring(0,30));
+      return;
   }
   msg = msg.substring(11);
   if (!msg.startsWith("version=2\r\n")) {
-    debug.out(F("WARNING: Version of fastclock not supported! Got ")); debug.outln(msg.substring(0,10));
+    debug.out(F("WARNING: Version of fastclock not supported! Got "));
+    debug.outln(msg.substring(0,10));
   }
   msg = msg.substring(msg.indexOf('\n')+1);
 
-  String checkName{""};
-  if (msg.startsWith("name=")) {
-    checkName = msg.substring(msg.indexOf('=')+1, msg.indexOf('\r'));
-    fastclockScanner.addClock(checkName);
-    msg = msg.substring(msg.indexOf('\n')+1);
-  } else { debug.outln(F("ERROR: Clock Message Format invalid! Expected name field.")); return; }
+  String checkName{""}, _text{""}, _clocktype{""}, _clock{""}, _weekday{""};
+  float _speed=0;
+  boolean _active;
+  int _clockHours=0, _clockMinutes=0, _clockSeconds=0;
+  while (msg.length() > 0) {
+    if (msg.startsWith("name=")) {
+      checkName = msg.substring(msg.indexOf('=')+1, msg.indexOf('\r'));
+      fastclockScanner.addClock(checkName);
+      msg = msg.substring(msg.indexOf('\n')+1);
+    } else if (msg.startsWith("ip-address=")) {
+      // ignore this
+      msg = msg.substring(msg.indexOf('\n')+1);
+    } else if (msg.startsWith("ip-port=")) {
+      // ignore this
+      msg = msg.substring(msg.indexOf('\n')+1);
+    } else if (msg.startsWith("text=")) {
+      _text = msg.substring(msg.indexOf('=')+1, msg.indexOf('\r'));
+      msg = msg.substring(msg.indexOf('\n')+1);
+    } else if (msg.startsWith("clocktype=")) {
+      _clocktype = msg.substring(msg.indexOf('=')+1, msg.indexOf('\r'));
+      msg = msg.substring(msg.indexOf('\n')+1);
+    } else if (msg.startsWith("active=")) {
+      if (msg.startsWith("active=yes\r\n")) {
+        _active = true;
+      } else {
+        _active = false;
+      }
+      msg = msg.substring(msg.indexOf('\n')+1);
+    } else if (msg.startsWith("speed=")) {
+      _speed = msg.substring(msg.indexOf('=')+1, msg.indexOf('\r')).toFloat();
+      msg = msg.substring(msg.indexOf('\n')+1);
+    } else if (msg.startsWith("clock=")) {
+      _clock = msg.substring(msg.indexOf('=')+1, msg.indexOf('\r'));
+      int firstColonPos = _clock.indexOf(':');
+      int secondColonPos = _clock.lastIndexOf(':');
+      _clockHours = _clock.substring(0,firstColonPos).toInt();
+      _clockMinutes = _clock.substring(firstColonPos+1, secondColonPos).toInt();
+      _clockSeconds = _clock.substring(secondColonPos+1).toInt();
+      msg = msg.substring(msg.indexOf('\n')+1);
+    } else if (msg.startsWith("weekday=")) {
+      _weekday = msg.substring(msg.indexOf('=')+1, msg.indexOf('\r'));
+      msg = msg.substring(msg.indexOf('\n')+1);
+    } else if (msg.startsWith("\r\n") || msg.startsWith("\n")) {
+      // ignore empty lines
+      msg = msg.substring(msg.indexOf('\n')+1);
+    } else {
+      debug.out(F("ERROR: Clock Message Format invalid! Ignoring unexpected field: "));
+      debug.outln(msg);
+      msg = msg.substring(msg.indexOf('\n')+1);
+    }
+  }
+
   if (!checkName.equals(name)) {
     // this is another clock, we are not following this one
-    debug.out(F("Ignoring clock with name="), DEBUG_MAX_INFO); debug.out(checkName.c_str(), DEBUG_MAX_INFO); debug.out(F("; looking for "), DEBUG_MAX_INFO); debug.outln(name.c_str(), DEBUG_MAX_INFO);
+    debug.out(F("Ignoring clock with name="), DEBUG_MAX_INFO);
+    debug.out(checkName.c_str(), DEBUG_MAX_INFO);
+    debug.out(F("; looking for "), DEBUG_MAX_INFO);
+    debug.outln(name.c_str(), DEBUG_MAX_INFO);
     return;
   }
-  if (msg.startsWith("ip-address=")) {
-    msg = msg.substring(msg.indexOf('\n')+1);
-  } else { debug.outln(F("ERROR: Clock Message Format invalid! Expected ip-address field.")); return; }
-  if (msg.startsWith("ip-port=")) {
-    msg = msg.substring(msg.indexOf('\n')+1);
-  } else { debug.outln(F("ERROR: Clock Message Format invalid! Expected ip-port field.")); return; }
-  if (msg.startsWith("text=")) {
-    text = msg.substring(msg.indexOf('=')+1, msg.indexOf('\r'));
-    msg = msg.substring(msg.indexOf('\n')+1);
-  } else { debug.outln(F("ERROR: Clock Message Format invalid! Expected text field.")); return; }
-  if (msg.startsWith("clocktype=")) {
-    clocktype = msg.substring(msg.indexOf('=')+1, msg.indexOf('\r'));
-    msg = msg.substring(msg.indexOf('\n')+1);
-  } else { debug.outln(F("ERROR: Clock Message Format invalid! Expected clocktype field.")); return; }
-  if (msg.startsWith("active=")) {
-    if (msg.startsWith("active=yes\r\n")) {
-      active = true;
-    } else {
-      active = false;
-    }
-    msg = msg.substring(msg.indexOf('\n')+1);
-  } else { debug.outln(F("ERROR: Clock Message Format invalid! Expected active field.")); return; }
-  if (msg.startsWith("speed=")) {
-    speed = msg.substring(msg.indexOf('=')+1, msg.indexOf('\r')).toFloat();
-    msg = msg.substring(msg.indexOf('\n')+1);
-  } else { debug.outln(F("ERROR: Clock Message Format invalid! Expected speed field.")); return; }
-  if (msg.startsWith("clock=")) {
-    clock = msg.substring(msg.indexOf('=')+1, msg.indexOf('\r'));
-    int firstColonPos = clock.indexOf(':');
-    int secondColonPos = clock.lastIndexOf(':');
-    clockHours = clock.substring(0,firstColonPos).toInt();
-    clockMinutes = clock.substring(firstColonPos+1, secondColonPos).toInt();
-    clockSeconds = clock.substring(secondColonPos+1).toInt();
-    msg = msg.substring(msg.indexOf('\n')+1);
-  } else { debug.outln(F("ERROR: Clock Message Format invalid! Expected clock field.")); return; }
-  if (msg.startsWith("weekday=")) {
-    weekday = msg.substring(msg.indexOf('=')+1, msg.indexOf('\r'));
-    msg = msg.substring(msg.indexOf('\n')+1);
-  } else { debug.outln(F("ERROR: Clock Message Format invalid! Expected weekday field.")); return; }
+  text = _text;
+  clocktype = _clocktype;
+  clock = _clock;
+  weekday = _weekday;
+  speed =_speed;
+  active = _active;
+  clockHours = _clockHours;
+  clockMinutes = _clockMinutes;
+  clockSeconds = _clockSeconds;
 
   for (int i=0; i<numClockChangeCallbacks; ++i) {
     clockChangeCallback[i](clockHours, clockMinutes, clockSeconds);
