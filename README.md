@@ -29,6 +29,8 @@ The configuration menu allows the selection of real or fast clock and some optio
 
 ![Config Menu](doc/WebConfig.png)
 
+This can be called by using /config as URL, e.g. http://192.168.5.27/config
+
 ## Links / References
 
 -   example of 3d printable segment frames: http://www.thingiverse.com/thing:2947883
