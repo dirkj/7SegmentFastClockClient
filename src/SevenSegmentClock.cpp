@@ -129,7 +129,7 @@ static const unsigned char PROGMEM charMapping[] = {
 uint8_t SevenSegmentClock::brightness;
 
 void SevenSegmentClock::displaySegment(unsigned int ledAddress, uint32_t color) {
-  //Serial.print("displaySegment led="); Serial.print(ledAddress); Serial.print(" color=0x"); Serial.println(color, HEX);
+  //debug.out("displaySegment led="); debug.out(ledAddress); debug.out(" color=0x"); debug.outln(color, HEX);
   for (int i=0; i<LedsPerSegment; i++) {
     strip->setPixelColor(ledAddress + i, color);
   }
@@ -139,25 +139,25 @@ void SevenSegmentClock::displayDigit(unsigned int digitNum, char charToDisplay) 
   unsigned int c = charToDisplay;
   uint32_t color;
 
-  //Serial.print("displayDigit: digitNum="); Serial.print(digitNum); Serial.print(" char=0x"); Serial.println(charToDisplay, HEX);
+  //debug.out("displayDigit: digitNum="); debug.out(digitNum); debug.out(" char=0x"); debug.outln(charToDisplay, HEX);
   if (digitNum < 0 || digitNum > 3) {
-    Serial.print("SevenSegmentClock::displayDigit: Invalid digit num ");
-    Serial.println(digitNum);
+    debug.out(F("SevenSegmentClock::displayDigit: Invalid digit num "));
+    debug.outln(digitNum);
     return;
   }
   int offset = digitOffset[digitNum];
-  //Serial.print("1st LED address="); Serial.println(offset);
+  //debug.out("1st LED address="); debug.outln(offset);
   if (c < firstCharacterMapped || c > lastCharacterMapped) {
-    Serial.print("ERROR: SevenSegmentClock::displayDigit - Cannot display character 0x");
-    Serial.print(c, HEX);
-    Serial.print(" at digit position ");
-    Serial.println(digitNum);
+    debug.out(F("ERROR: SevenSegmentClock::displayDigit - Cannot display character 0x"));
+    debug.out(c, HEX);
+    debug.out(F(" at digit position "));
+    debug.outln(digitNum);
     return;
   }
   c -= firstCharacterMapped;
-  //Serial.print("Check char mapping at index="); Serial.println(c);
+  //debug.out("Check char mapping at index="); debug.outln(c);
   unsigned char mapping = pgm_read_byte(charMapping + c);
-  //Serial.print("Char mapping="); Serial.println(mapping, HEX);
+  //debug.out("Char mapping="); debug.outln(mapping, HEX);
   color = (mapping & Seg_a) ? currentColor : black;
   displaySegment(offset + SegOffset_a, color);
   color = (mapping & Seg_b) ? currentColor : black;
@@ -179,7 +179,7 @@ void SevenSegmentClock::displaySeperator(char seperatorCharacter) {
 }
 
 void SevenSegmentClock::displaySeperator(char seperatorCharacter, uint32_t color) {
-  //Serial.print("displaySeperator: seperator="); Serial.println(seperatorCharacter);
+  //debug.out("displaySeperator: seperator="); debug.outln(seperatorCharacter);
   switch (seperatorCharacter) {
     case '.':
     case ',':
@@ -198,8 +198,8 @@ void SevenSegmentClock::displaySeperator(char seperatorCharacter, uint32_t color
         strip->setPixelColor(clockSeperatorLed2, color);
         break;
     default:
-      Serial.print("SevenSegmentClock::displaySeperator: Unknown character to be displayed: ");
-      Serial.println(seperatorCharacter);
+      debug.out(F("SevenSegmentClock::displaySeperator: Unknown character to be displayed: "));
+      debug.outln(seperatorCharacter);
     case ' ':
     case 0:
       strip->setPixelColor(decimalPointLed, black);
@@ -222,8 +222,8 @@ void SevenSegmentClock::displayTime(int hour, int minute)  {
   if (clockHour != hour || clockMinute != minute) {
     clockHour = hour;
     clockMinute = minute;
-    Serial.print("SevenSegmentClock: new time ");
-    Serial.print(clockHour); Serial.print(":"); Serial.println(clockMinute);
+    debug.out(F("SevenSegmentClock: new time "));
+    debug.out(clockHour); debug.out(F(":")); debug.outln(clockMinute);
   }
   displayUpdate();
 };
@@ -318,8 +318,8 @@ void SevenSegmentClock::displayUpdate(void) {
       nextBlinkSwitch_ms = millis() + (currentlyBlinkOn ? BLINK_ON_TIME_ms : BLINK_OFF_TIME_ms);
     }
     strip->show();
-    //Serial.print("Shown: "); Serial.print(displayText[0]); Serial.print(displayText[1]);
-    //Serial.print(':'); Serial.print(displayText[2]); Serial.println(displayText[3]);
+    //debug.out("Shown: "); debug.out(displayText[0]); debug.out(displayText[1]);
+    //debug.out(':'); debug.out(displayText[2]); debug.outln(displayText[3]);
     lastUpdate_ms = millis();
   }
 }
@@ -389,9 +389,9 @@ SevenSegmentClock::Color SevenSegmentClock::getColorHandleByName(String name) {
 }
 
 void SevenSegmentClock::begin(void) {
-  Serial.println("Init Neopixels ...");
-  Serial.print("LED pin="); Serial.println(LedDataPin);
-  Serial.print("Pixels="); Serial.println(PixelCount);
+  debug.outln(F("Init Neopixels ..."));
+  debug.out(F("LED pin=")); debug.outln(LedDataPin);
+  debug.out(F("Pixels=")); debug.outln(PixelCount);
   SevenSegmentClock::strip = new Adafruit_NeoPixel(PixelCount, LedDataPin, NEO_GRB + NEO_KHZ800);
   strip->begin();
   setClockHalted(true);
