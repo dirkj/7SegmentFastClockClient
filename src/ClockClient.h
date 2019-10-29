@@ -59,14 +59,25 @@ class ClockClient
     static String clocktype;
     static boolean active;
     static float speed;
+    static int interval;
     static String clock;
     static int clockHours;
     static int clockMinutes;
     static int clockSeconds;
     static String weekday;
     void interpretClockMessage(const char *msg);
+    void interpretClockMessageLine(const char *msg);
+    //void interpretClockMessageLine(String msg);
     void addClock(const char * clockName);
     void addClock(String clockName);
+    void outLine(uint8_t *buff, int len);
+    void dumpReceivedMessage(String msg);
+    // temporary message storage:
+    static String checkName, _text, _clocktype, _clock, _weekday;
+    static float _speed;
+    static boolean _active;
+    static int _clockHours, _clockMinutes, _clockSeconds, _interval;
+
 };
 
 #endif
