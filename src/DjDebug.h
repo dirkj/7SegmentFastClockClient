@@ -18,6 +18,8 @@ class Debug {
     static void outln(int number);
     static void out(int number, int level);
     static void outln(int number, int level);
+    static void outHex16(uint16_t *data, uint8_t length);
+    static void outHex8(uint8_t *data, uint8_t length);
   	static void out(const String& text, const int level);
   	static void out(const String& text);
   	static void outln(const String& text, const int level);
@@ -32,7 +34,7 @@ class Debug {
     static void outln_p(PGM_P text);
   	static void setOutputUptoLevel(int level);
   	static void setDefaultDebugLevel(int level);
-  
+
   private:
   	static int outputUptoLevel;
   	static int defaultDebugLevel;
@@ -49,4 +51,3 @@ class Debug {
 #define DEBUG_MAX_INFO 5
 
 #endif
-
